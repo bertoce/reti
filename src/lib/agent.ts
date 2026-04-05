@@ -203,7 +203,7 @@ export async function processMessage(messageId: string) {
     let textContent = message.content || "";
     if (message.message_type === "voice" && message.wa_message_id) {
       try {
-        textContent = await transcribeVoiceNote(message.wa_message_id);
+        textContent = await transcribeVoiceNote(message.wa_message_id, message.media_data);
         // Update the message with the transcription
         await supabase
           .from("site_messages")
@@ -211,7 +211,7 @@ export async function processMessage(messageId: string) {
           .eq("id", messageId);
       } catch (err) {
         console.error("[agent] Voice transcription failed:", err);
-        textContent = "(voice note — transcription failed)";
+        textContent = "(nota de voz recibida — no se pudo transcribir)";
       }
     }
 
@@ -221,7 +221,8 @@ export async function processMessage(messageId: string) {
         const photoUrl = await processMedia(
           message.wa_message_id,
           message.project_id,
-          "incoming"
+          "incoming",
+          message.media_data
         );
 
         // Store the photo URL on the message
@@ -321,9 +322,14 @@ export async function processMessage(messageId: string) {
 
     // Send confirmation back via WhatsApp
     if (replyText && message.sender_phone) {
-      await sendWhatsAppMessage(message.sender_phone, replyText);
+      try {
+        await sendWhatsAppMessage(message.sender_phone, replyText);
+      } catch (sendErr) {
+        console.error("[agent] Failed to send WhatsApp reply (rate limit?):", sendErr);
+        // Don't fail the whole processing — the task was still created
+      }
 
-      // Log the outbound message
+      // Log the outbound message regardless (we tried to send it)
       await supabase.from("site_messages").insert({
         project_id: message.project_id,
         direction: "outbound",

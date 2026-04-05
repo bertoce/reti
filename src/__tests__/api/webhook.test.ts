@@ -179,6 +179,56 @@ describe("POST /api/webhooks/whatsapp", () => {
     expect(res.status).toBe(200);
   });
 
+  it("stores mediaData for voice messages", async () => {
+    const mediaData = {
+      audioMessage: {
+        mimetype: "audio/ogg; codecs=opus",
+        mediaKey: "voice-key-123",
+        url: "https://mmg.whatsapp.net/encrypted-audio",
+      },
+    };
+
+    vi.mocked(parseWebhookPayload).mockReturnValueOnce({
+      messageId: "wa-msg-voice",
+      from: "+5212345678",
+      type: "voice",
+      hasMedia: true,
+      mediaData,
+    });
+
+    // No duplicate
+    mockLimit.mockReturnValueOnce({ data: [], error: null });
+
+    // Project found
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "proj-1" },
+      error: null,
+    });
+
+    // Message inserted
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "msg-voice-1" },
+      error: null,
+    });
+
+    const res = await POST(createRequest({
+      event: "messages.received",
+      data: {
+        messages: {
+          key: { cleanedSenderPn: "5212345678", fromMe: false, id: "wa-msg-voice" },
+          message: { audioMessage: mediaData.audioMessage },
+        },
+      },
+    }));
+
+    expect(res.status).toBe(200);
+
+    // Verify media_data was included in the insert
+    const insertedData = mockInsert.mock.calls[0][0];
+    expect(insertedData.media_data).toEqual(mediaData);
+    expect(insertedData.message_type).toBe("voice");
+  });
+
   it("still returns 200 if agent processing fails", async () => {
     vi.mocked(parseWebhookPayload).mockReturnValueOnce({
       messageId: "wa-msg-fail",

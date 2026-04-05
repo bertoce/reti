@@ -1,6 +1,6 @@
 // Media handling: download from WhatsApp, upload to Supabase Storage
 import { createServiceClient } from "./supabase";
-import { downloadMedia } from "./wasender";
+import { decryptMedia } from "./wasender";
 
 const BUCKET = "site-photos";
 
@@ -11,10 +11,15 @@ const BUCKET = "site-photos";
 export async function processMedia(
   messageId: string,
   projectId: string,
-  category: string = "general"
+  category: string = "general",
+  mediaData?: Record<string, unknown>
 ): Promise<string> {
-  // Download from WASenderApi
-  const { buffer, contentType } = await downloadMedia(messageId);
+  if (!mediaData) {
+    throw new Error("mediaData is required to decrypt WhatsApp media");
+  }
+
+  // Decrypt and download from WASenderApi
+  const { buffer, contentType } = await decryptMedia(messageId, mediaData);
 
   // Determine file extension
   const ext = extensionFromContentType(contentType);
@@ -46,12 +51,19 @@ export async function processMedia(
 // ============================================================
 // Transcribe a voice note using Groq Whisper
 // ============================================================
-export async function transcribeVoiceNote(messageId: string): Promise<string> {
+export async function transcribeVoiceNote(
+  messageId: string,
+  mediaData?: Record<string, unknown>
+): Promise<string> {
   const groqKey = process.env.GROQ_API_KEY;
   if (!groqKey) throw new Error("Missing GROQ_API_KEY");
 
-  // Download the audio from WhatsApp
-  const { buffer, contentType } = await downloadMedia(messageId);
+  if (!mediaData) {
+    throw new Error("mediaData is required to decrypt WhatsApp media");
+  }
+
+  // Decrypt and download the audio from WhatsApp
+  const { buffer, contentType } = await decryptMedia(messageId, mediaData);
 
   // Send to Groq Whisper for transcription
   const formData = new FormData();

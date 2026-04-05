@@ -6,7 +6,7 @@ vi.stubGlobal("fetch", mockFetch);
 
 import {
   sendWhatsAppMessage,
-  downloadMedia,
+  decryptMedia,
   verifyWebhookSignature,
   parseWebhookPayload,
   type IncomingMessage,
@@ -89,7 +89,7 @@ describe("parseWebhookPayload", () => {
     expect(result!.text).toBe("Falta material para la instalación");
   });
 
-  it("parses an image message with caption", () => {
+  it("parses an image message with caption and preserves mediaData", () => {
     const payload = wrapPayload({
       key: {
         cleanedSenderPn: "5212345678",
@@ -100,6 +100,8 @@ describe("parseWebhookPayload", () => {
         imageMessage: {
           caption: "Avance del segundo piso",
           mimetype: "image/jpeg",
+          mediaKey: "abc123",
+          url: "https://mmg.whatsapp.net/encrypted",
         },
       },
     });
@@ -109,6 +111,14 @@ describe("parseWebhookPayload", () => {
     expect(result!.type).toBe("image");
     expect(result!.caption).toBe("Avance del segundo piso");
     expect(result!.hasMedia).toBe(true);
+    expect(result!.mediaData).toEqual({
+      imageMessage: {
+        caption: "Avance del segundo piso",
+        mimetype: "image/jpeg",
+        mediaKey: "abc123",
+        url: "https://mmg.whatsapp.net/encrypted",
+      },
+    });
   });
 
   it("parses an image message without caption", () => {
@@ -130,9 +140,10 @@ describe("parseWebhookPayload", () => {
     expect(result!.type).toBe("image");
     expect(result!.caption).toBeUndefined();
     expect(result!.hasMedia).toBe(true);
+    expect(result!.mediaData).toBeDefined();
   });
 
-  it("parses a voice message", () => {
+  it("parses a voice message and preserves mediaData", () => {
     const payload = wrapPayload({
       key: {
         cleanedSenderPn: "5212345678",
@@ -143,6 +154,8 @@ describe("parseWebhookPayload", () => {
         audioMessage: {
           mimetype: "audio/ogg; codecs=opus",
           ptt: true,
+          mediaKey: "voice-key-123",
+          url: "https://mmg.whatsapp.net/encrypted-audio",
         },
       },
     });
@@ -151,9 +164,17 @@ describe("parseWebhookPayload", () => {
     expect(result).not.toBeNull();
     expect(result!.type).toBe("voice");
     expect(result!.hasMedia).toBe(true);
+    expect(result!.mediaData).toEqual({
+      audioMessage: {
+        mimetype: "audio/ogg; codecs=opus",
+        ptt: true,
+        mediaKey: "voice-key-123",
+        url: "https://mmg.whatsapp.net/encrypted-audio",
+      },
+    });
   });
 
-  it("parses a document message", () => {
+  it("parses a document message and preserves mediaData", () => {
     const payload = wrapPayload({
       key: {
         cleanedSenderPn: "5212345678",
@@ -164,6 +185,7 @@ describe("parseWebhookPayload", () => {
         documentMessage: {
           caption: "Factura del proveedor",
           mimetype: "application/pdf",
+          mediaKey: "doc-key-456",
         },
       },
     });
@@ -173,6 +195,13 @@ describe("parseWebhookPayload", () => {
     expect(result!.type).toBe("document");
     expect(result!.caption).toBe("Factura del proveedor");
     expect(result!.hasMedia).toBe(true);
+    expect(result!.mediaData).toEqual({
+      documentMessage: {
+        caption: "Factura del proveedor",
+        mimetype: "application/pdf",
+        mediaKey: "doc-key-456",
+      },
+    });
   });
 
   it("skips outgoing messages (fromMe=true)", () => {
@@ -290,36 +319,88 @@ describe("sendWhatsAppMessage", () => {
   });
 });
 
-describe("downloadMedia", () => {
+describe("decryptMedia", () => {
   beforeEach(() => {
     mockFetch.mockReset();
   });
 
-  it("downloads media and returns buffer + content type", async () => {
+  const sampleMediaData = {
+    audioMessage: {
+      mimetype: "audio/ogg; codecs=opus",
+      mediaKey: "test-key-123",
+      url: "https://mmg.whatsapp.net/encrypted",
+    },
+  };
+
+  it("calls decrypt-media endpoint and downloads the decrypted file", async () => {
+    // First call: POST /api/decrypt-media returns publicUrl
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ publicUrl: "https://temp.wasenderapi.com/decrypted/abc123.ogg" }),
+    });
+
+    // Second call: GET the public URL returns the actual file
     const testBuffer = new ArrayBuffer(10);
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      headers: new Headers({ "content-type": "image/jpeg" }),
+      headers: new Headers({ "content-type": "audio/ogg" }),
       arrayBuffer: async () => testBuffer,
     });
 
-    const result = await downloadMedia("msg-123");
-    expect(result.contentType).toBe("image/jpeg");
+    const result = await decryptMedia("msg-123", sampleMediaData);
+    expect(result.contentType).toBe("audio/ogg");
     expect(result.buffer).toBeInstanceOf(Buffer);
 
-    const [url] = mockFetch.mock.calls[0];
-    expect(url).toBe("https://www.wasenderapi.com/api/download-media/msg-123");
+    // Verify first call is POST to decrypt-media
+    const [decryptUrl, decryptOptions] = mockFetch.mock.calls[0];
+    expect(decryptUrl).toBe("https://www.wasenderapi.com/api/decrypt-media");
+    expect(decryptOptions.method).toBe("POST");
+
+    const body = JSON.parse(decryptOptions.body);
+    expect(body.data.messages.key.id).toBe("msg-123");
+    expect(body.data.messages.message).toEqual(sampleMediaData);
+
+    // Verify second call fetches the public URL
+    const [fileUrl] = mockFetch.mock.calls[1];
+    expect(fileUrl).toBe("https://temp.wasenderapi.com/decrypted/abc123.ogg");
   });
 
-  it("throws on download failure", async () => {
+  it("throws when decrypt-media returns an error", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      text: async () => "Invalid media data",
+    });
+
+    await expect(decryptMedia("msg-bad", sampleMediaData)).rejects.toThrow(
+      "WASenderApi decrypt failed: 400"
+    );
+  });
+
+  it("throws when decrypt-media returns no URL", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true }),
+    });
+
+    await expect(decryptMedia("msg-nourl", sampleMediaData)).rejects.toThrow(
+      "WASenderApi decrypt returned no URL"
+    );
+  });
+
+  it("throws when decrypted file download fails", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ publicUrl: "https://temp.wasenderapi.com/decrypted/gone.ogg" }),
+    });
+
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
-      text: async () => "Not found",
     });
 
-    await expect(downloadMedia("msg-404")).rejects.toThrow(
-      "WASenderApi download failed: 404"
+    await expect(decryptMedia("msg-gone", sampleMediaData)).rejects.toThrow(
+      "Failed to download decrypted media: 404"
     );
   });
 });

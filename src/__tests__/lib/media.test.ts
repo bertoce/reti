@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock dependencies
 vi.mock("@/lib/wasender", () => ({
-  downloadMedia: vi.fn(),
+  decryptMedia: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase", () => ({
@@ -14,21 +14,37 @@ const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
 import { processMedia, transcribeVoiceNote } from "@/lib/media";
-import { downloadMedia } from "@/lib/wasender";
+import { decryptMedia } from "@/lib/wasender";
 import { createServiceClient } from "@/lib/supabase";
 
-const mockDownload = vi.mocked(downloadMedia);
+const mockDecrypt = vi.mocked(decryptMedia);
 const mockCreateClient = vi.mocked(createServiceClient);
+
+const sampleImageMediaData = {
+  imageMessage: {
+    mimetype: "image/jpeg",
+    mediaKey: "img-key-123",
+    url: "https://mmg.whatsapp.net/encrypted-img",
+  },
+};
+
+const sampleAudioMediaData = {
+  audioMessage: {
+    mimetype: "audio/ogg; codecs=opus",
+    mediaKey: "audio-key-456",
+    url: "https://mmg.whatsapp.net/encrypted-audio",
+  },
+};
 
 describe("processMedia", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("downloads media and uploads to Supabase Storage", async () => {
+  it("decrypts media and uploads to Supabase Storage", async () => {
     const testBuffer = Buffer.from("fake-image-data");
 
-    mockDownload.mockResolvedValueOnce({
+    mockDecrypt.mockResolvedValueOnce({
       buffer: testBuffer,
       contentType: "image/jpeg",
     });
@@ -47,9 +63,9 @@ describe("processMedia", () => {
       },
     } as any);
 
-    const url = await processMedia("msg-123", "proj-1", "progress");
+    const url = await processMedia("msg-123", "proj-1", "progress", sampleImageMediaData);
 
-    expect(mockDownload).toHaveBeenCalledWith("msg-123");
+    expect(mockDecrypt).toHaveBeenCalledWith("msg-123", sampleImageMediaData);
     expect(mockUpload).toHaveBeenCalledOnce();
     expect(url).toContain("site-photos");
 
@@ -60,8 +76,14 @@ describe("processMedia", () => {
     expect(uploadPath).toMatch(/\.jpg$/);
   });
 
+  it("throws when mediaData is missing", async () => {
+    await expect(processMedia("msg-123", "proj-1", "progress")).rejects.toThrow(
+      "mediaData is required"
+    );
+  });
+
   it("throws when upload fails", async () => {
-    mockDownload.mockResolvedValueOnce({
+    mockDecrypt.mockResolvedValueOnce({
       buffer: Buffer.from("data"),
       contentType: "image/png",
     });
@@ -76,7 +98,7 @@ describe("processMedia", () => {
       },
     } as any);
 
-    await expect(processMedia("msg-123", "proj-1")).rejects.toThrow(
+    await expect(processMedia("msg-123", "proj-1", "general", sampleImageMediaData)).rejects.toThrow(
       "Storage upload failed: Bucket not found"
     );
   });
@@ -93,7 +115,7 @@ describe("processMedia", () => {
     for (const { type, ext } of contentTypes) {
       vi.clearAllMocks();
 
-      mockDownload.mockResolvedValueOnce({
+      mockDecrypt.mockResolvedValueOnce({
         buffer: Buffer.from("data"),
         contentType: type,
       });
@@ -112,7 +134,7 @@ describe("processMedia", () => {
         },
       } as any);
 
-      await processMedia("msg-123", "proj-1");
+      await processMedia("msg-123", "proj-1", "general", sampleImageMediaData);
 
       const uploadPath = mockUpload.mock.calls[0][0] as string;
       expect(uploadPath).toMatch(new RegExp(`\\.${ext}$`));
@@ -126,8 +148,8 @@ describe("transcribeVoiceNote", () => {
     mockFetch.mockReset();
   });
 
-  it("downloads audio and sends to Groq Whisper", async () => {
-    mockDownload.mockResolvedValueOnce({
+  it("decrypts audio and sends to Groq Whisper", async () => {
+    mockDecrypt.mockResolvedValueOnce({
       buffer: Buffer.from("fake-audio"),
       contentType: "audio/ogg",
     });
@@ -137,10 +159,10 @@ describe("transcribeVoiceNote", () => {
       json: async () => ({ text: "Hoy compramos 50 blocks de cemento" }),
     });
 
-    const result = await transcribeVoiceNote("msg-voice");
+    const result = await transcribeVoiceNote("msg-voice", sampleAudioMediaData);
 
     expect(result).toBe("Hoy compramos 50 blocks de cemento");
-    expect(mockDownload).toHaveBeenCalledWith("msg-voice");
+    expect(mockDecrypt).toHaveBeenCalledWith("msg-voice", sampleAudioMediaData);
     expect(mockFetch).toHaveBeenCalledOnce();
 
     const [url, options] = mockFetch.mock.calls[0];
@@ -149,8 +171,14 @@ describe("transcribeVoiceNote", () => {
     expect(options.headers.Authorization).toContain("gsk_");
   });
 
+  it("throws when mediaData is missing", async () => {
+    await expect(transcribeVoiceNote("msg-voice")).rejects.toThrow(
+      "mediaData is required"
+    );
+  });
+
   it("throws when Groq API fails", async () => {
-    mockDownload.mockResolvedValueOnce({
+    mockDecrypt.mockResolvedValueOnce({
       buffer: Buffer.from("audio"),
       contentType: "audio/ogg",
     });
@@ -161,7 +189,7 @@ describe("transcribeVoiceNote", () => {
       text: async () => "Rate limited",
     });
 
-    await expect(transcribeVoiceNote("msg-voice")).rejects.toThrow(
+    await expect(transcribeVoiceNote("msg-voice", sampleAudioMediaData)).rejects.toThrow(
       "Groq transcription failed: 429"
     );
   });
@@ -170,7 +198,7 @@ describe("transcribeVoiceNote", () => {
     const original = process.env.GROQ_API_KEY;
     delete process.env.GROQ_API_KEY;
 
-    await expect(transcribeVoiceNote("msg-voice")).rejects.toThrow(
+    await expect(transcribeVoiceNote("msg-voice", sampleAudioMediaData)).rejects.toThrow(
       "Missing GROQ_API_KEY"
     );
 

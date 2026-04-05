@@ -77,6 +77,7 @@ CREATE TABLE site_messages (
   message_type TEXT NOT NULL CHECK (message_type IN ('text', 'image', 'voice', 'document')),
   content TEXT,                    -- text content or voice transcription
   media_urls TEXT[],               -- attached media URLs
+  media_data JSONB,                -- raw WASenderApi media metadata for decrypt-media API
 
   -- Agent processing metadata
   agent_intent TEXT,

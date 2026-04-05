@@ -12,12 +12,6 @@ function getHeaders() {
   };
 }
 
-function getSessionId() {
-  const sessionId = process.env.WASENDER_SESSION_ID;
-  if (!sessionId) throw new Error("Missing WASENDER_SESSION_ID");
-  return sessionId;
-}
-
 // ============================================================
 // Send a text message via WhatsApp
 // ============================================================
@@ -44,34 +38,64 @@ export async function sendWhatsAppMessage(to: string, text: string) {
 }
 
 // ============================================================
-// Download media from a WhatsApp message
-// Returns the raw buffer and content type
+// Decrypt media from a WhatsApp message via WASenderApi
+// Posts the raw media data from the webhook to /api/decrypt-media
+// Returns a temporary public URL (valid ~1 hour) and the content type
 // ============================================================
-export async function downloadMedia(messageId: string): Promise<{
+export async function decryptMedia(
+  messageId: string,
+  mediaData: Record<string, unknown>
+): Promise<{
   buffer: Buffer;
   contentType: string;
 }> {
-  const response = await fetch(
-    `${WASENDER_BASE_URL}/download-media/${messageId}`,
+  // Step 1: Call decrypt-media to get a temporary public URL
+  const decryptResponse = await fetch(
+    `${WASENDER_BASE_URL}/decrypt-media`,
     {
-      method: "GET",
+      method: "POST",
       headers: getHeaders(),
+      body: JSON.stringify({
+        data: {
+          messages: {
+            key: { id: messageId },
+            message: mediaData,
+          },
+        },
+      }),
     }
   );
 
-  if (!response.ok) {
-    const error = await response.text();
-    console.error("[wasender] Failed to download media:", error);
-    throw new Error(`WASenderApi download failed: ${response.status}`);
+  if (!decryptResponse.ok) {
+    const error = await decryptResponse.text();
+    console.error("[wasender] Failed to decrypt media:", error);
+    throw new Error(`WASenderApi decrypt failed: ${decryptResponse.status}`);
   }
 
-  const contentType = response.headers.get("content-type") || "application/octet-stream";
-  const arrayBuffer = await response.arrayBuffer();
+  const decryptResult = await decryptResponse.json();
+  const publicUrl = decryptResult.publicUrl || decryptResult.url;
+
+  if (!publicUrl) {
+    console.error("[wasender] No publicUrl in decrypt response:", JSON.stringify(decryptResult));
+    throw new Error("WASenderApi decrypt returned no URL");
+  }
+
+  console.log("[wasender] Decrypted media URL:", publicUrl);
+
+  // Step 2: Download the actual file from the temporary URL
+  const fileResponse = await fetch(publicUrl);
+  if (!fileResponse.ok) {
+    throw new Error(`Failed to download decrypted media: ${fileResponse.status}`);
+  }
+
+  const contentType = fileResponse.headers.get("content-type") || "application/octet-stream";
+  const arrayBuffer = await fileResponse.arrayBuffer();
   return {
     buffer: Buffer.from(arrayBuffer),
     contentType,
   };
 }
+
 
 // ============================================================
 // Verify webhook signature
@@ -102,6 +126,7 @@ export type IncomingMessage = {
   text?: string;       // text content (for text messages)
   caption?: string;    // caption (for image messages)
   hasMedia: boolean;
+  mediaData?: Record<string, unknown>;  // raw media message data for decrypt-media API
 };
 
 export function parseWebhookPayload(body: Record<string, unknown>): IncomingMessage | null {
@@ -150,25 +175,30 @@ export function parseWebhookPayload(body: Record<string, unknown>): IncomingMess
         type: "image",
         caption: (imageMsg.caption as string) || undefined,
         hasMedia: true,
+        mediaData: { imageMessage: imageMsg },
       };
     }
 
     if (messageContent.audioMessage) {
+      const audioMsg = messageContent.audioMessage as Record<string, unknown>;
       return {
         messageId,
         from,
         type: "voice",
         hasMedia: true,
+        mediaData: { audioMessage: audioMsg },
       };
     }
 
     if (messageContent.documentMessage) {
+      const docMsg = messageContent.documentMessage as Record<string, unknown>;
       return {
         messageId,
         from,
         type: "document",
-        caption: ((messageContent.documentMessage as Record<string, unknown>).caption as string) || undefined,
+        caption: (docMsg.caption as string) || undefined,
         hasMedia: true,
+        mediaData: { documentMessage: docMsg },
       };
     }
 

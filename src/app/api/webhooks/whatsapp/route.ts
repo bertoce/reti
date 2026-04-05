@@ -79,6 +79,7 @@ export async function POST(request: Request) {
         content: incoming.text || incoming.caption || null,
         sender_phone: incoming.from,
         wa_message_id: incoming.messageId,
+        media_data: incoming.mediaData || null,
         processed: false,
       })
       .select("id")
