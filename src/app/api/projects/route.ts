@@ -3,6 +3,7 @@
 
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
+import { normalizePhone } from "@/lib/phone";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
         developer_email: developer_email || null,
         developer_name: developer_name || null,
         residente_name,
-        residente_phone,
+        residente_phone: normalizePhone(residente_phone),
         status: "active",
       })
       .select()

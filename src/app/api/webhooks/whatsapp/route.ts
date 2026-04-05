@@ -59,16 +59,11 @@ export async function POST(request: Request) {
     }
 
     // Find the project for this phone number
-    // Normalize: strip leading "+" since WASenderApi sends without it
-    const phoneVariants = [
-      incoming.from,
-      `+${incoming.from}`,
-    ];
-
+    // Phone is stored as digits only (normalized on save)
     const { data: project } = await supabase
       .from("projects")
       .select("id")
-      .in("residente_phone", phoneVariants)
+      .eq("residente_phone", incoming.from)
       .eq("status", "active")
       .limit(1)
       .single();
