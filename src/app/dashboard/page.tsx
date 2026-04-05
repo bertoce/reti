@@ -78,17 +78,32 @@ export default function DashboardPage() {
           <div className="space-y-3 mb-6">
             <p className="section-label">Mis proyectos</p>
             {projects.map((project) => (
-              <button
+              <div
                 key={project.id}
-                onClick={() => router.push(`/project/${project.id}/overview`)}
-                className="w-full text-left p-4 bg-card border border-border rounded-lg hover:border-accent transition-colors"
+                className="p-4 bg-card border border-border rounded-lg"
                 data-testid="project-card"
               >
                 <p className="text-sm font-medium text-foreground">{project.name}</p>
                 <p className="text-xs text-muted mt-1">
-                  Residente: {project.residente_name} · {project.status}
+                  Residente: {project.residente_name}
                 </p>
-              </button>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => router.push(`/project/${project.id}`)}
+                    className="flex-1 text-center py-2 text-xs font-medium border border-border rounded hover:border-accent transition-colors"
+                    data-testid="view-residente"
+                  >
+                    Vista residente
+                  </button>
+                  <button
+                    onClick={() => router.push(`/project/${project.id}/overview`)}
+                    className="flex-1 text-center py-2 text-xs font-medium bg-accent text-white rounded"
+                    data-testid="view-developer"
+                  >
+                    Vista desarrollador
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         )}
