@@ -1,7 +1,7 @@
 // WASenderApi client — send messages and download media
 // Docs: https://wasenderapi.com/api-docs
 
-const WASENDER_BASE_URL = "https://app.wasenderapi.com/api";
+const WASENDER_BASE_URL = "https://www.wasenderapi.com/api";
 
 function getHeaders() {
   const apiKey = process.env.WASENDER_API_KEY;
@@ -22,15 +22,13 @@ function getSessionId() {
 // Send a text message via WhatsApp
 // ============================================================
 export async function sendWhatsAppMessage(to: string, text: string) {
-  const sessionId = getSessionId();
   const response = await fetch(
-    `${WASENDER_BASE_URL}/send-message/${sessionId}`,
+    `${WASENDER_BASE_URL}/send-message`,
     {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({
         to,
-        type: "text",
         text,
       }),
     }
@@ -53,9 +51,8 @@ export async function downloadMedia(messageId: string): Promise<{
   buffer: Buffer;
   contentType: string;
 }> {
-  const sessionId = getSessionId();
   const response = await fetch(
-    `${WASENDER_BASE_URL}/download-media/${sessionId}/${messageId}`,
+    `${WASENDER_BASE_URL}/download-media/${messageId}`,
     {
       method: "GET",
       headers: getHeaders(),

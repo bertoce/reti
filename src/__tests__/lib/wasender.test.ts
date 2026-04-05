@@ -36,19 +36,29 @@ describe("verifyWebhookSignature", () => {
 });
 
 describe("parseWebhookPayload", () => {
-  it("parses a text message correctly", () => {
-    const payload = {
-      message: {
-        key: {
-          remoteJid: "5212345678@s.whatsapp.net",
-          fromMe: false,
-          id: "msg-123",
-        },
-        message: {
-          conversation: "Hoy terminamos el colado",
-        },
-      },
+  // Helper to wrap message data in WASenderApi's actual payload structure
+  function wrapPayload(messages: Record<string, unknown>) {
+    return {
+      event: "messages.received",
+      sessionId: "test-session",
+      data: { messages },
+      timestamp: Date.now(),
     };
+  }
+
+  it("parses a text message correctly", () => {
+    const payload = wrapPayload({
+      key: {
+        remoteJid: "5212345678@lid",
+        senderPn: "5212345678@s.whatsapp.net",
+        cleanedSenderPn: "5212345678",
+        fromMe: false,
+        id: "msg-123",
+      },
+      message: {
+        conversation: "Hoy terminamos el colado",
+      },
+    });
 
     const result = parseWebhookPayload(payload);
     expect(result).not.toBeNull();
@@ -60,20 +70,18 @@ describe("parseWebhookPayload", () => {
   });
 
   it("parses an extended text message", () => {
-    const payload = {
+    const payload = wrapPayload({
+      key: {
+        cleanedSenderPn: "5212345678",
+        fromMe: false,
+        id: "msg-456",
+      },
       message: {
-        key: {
-          remoteJid: "5212345678@s.whatsapp.net",
-          fromMe: false,
-          id: "msg-456",
-        },
-        message: {
-          extendedTextMessage: {
-            text: "Falta material para la instalación",
-          },
+        extendedTextMessage: {
+          text: "Falta material para la instalación",
         },
       },
-    };
+    });
 
     const result = parseWebhookPayload(payload);
     expect(result).not.toBeNull();
@@ -82,21 +90,19 @@ describe("parseWebhookPayload", () => {
   });
 
   it("parses an image message with caption", () => {
-    const payload = {
+    const payload = wrapPayload({
+      key: {
+        cleanedSenderPn: "5212345678",
+        fromMe: false,
+        id: "msg-789",
+      },
       message: {
-        key: {
-          remoteJid: "5212345678@s.whatsapp.net",
-          fromMe: false,
-          id: "msg-789",
-        },
-        message: {
-          imageMessage: {
-            caption: "Avance del segundo piso",
-            mimetype: "image/jpeg",
-          },
+        imageMessage: {
+          caption: "Avance del segundo piso",
+          mimetype: "image/jpeg",
         },
       },
-    };
+    });
 
     const result = parseWebhookPayload(payload);
     expect(result).not.toBeNull();
@@ -106,20 +112,18 @@ describe("parseWebhookPayload", () => {
   });
 
   it("parses an image message without caption", () => {
-    const payload = {
+    const payload = wrapPayload({
+      key: {
+        cleanedSenderPn: "5212345678",
+        fromMe: false,
+        id: "msg-101",
+      },
       message: {
-        key: {
-          remoteJid: "5212345678@s.whatsapp.net",
-          fromMe: false,
-          id: "msg-101",
-        },
-        message: {
-          imageMessage: {
-            mimetype: "image/jpeg",
-          },
+        imageMessage: {
+          mimetype: "image/jpeg",
         },
       },
-    };
+    });
 
     const result = parseWebhookPayload(payload);
     expect(result).not.toBeNull();
@@ -129,21 +133,19 @@ describe("parseWebhookPayload", () => {
   });
 
   it("parses a voice message", () => {
-    const payload = {
+    const payload = wrapPayload({
+      key: {
+        cleanedSenderPn: "5212345678",
+        fromMe: false,
+        id: "msg-voice",
+      },
       message: {
-        key: {
-          remoteJid: "5212345678@s.whatsapp.net",
-          fromMe: false,
-          id: "msg-voice",
-        },
-        message: {
-          audioMessage: {
-            mimetype: "audio/ogg; codecs=opus",
-            ptt: true,
-          },
+        audioMessage: {
+          mimetype: "audio/ogg; codecs=opus",
+          ptt: true,
         },
       },
-    };
+    });
 
     const result = parseWebhookPayload(payload);
     expect(result).not.toBeNull();
@@ -152,21 +154,19 @@ describe("parseWebhookPayload", () => {
   });
 
   it("parses a document message", () => {
-    const payload = {
+    const payload = wrapPayload({
+      key: {
+        cleanedSenderPn: "5212345678",
+        fromMe: false,
+        id: "msg-doc",
+      },
       message: {
-        key: {
-          remoteJid: "5212345678@s.whatsapp.net",
-          fromMe: false,
-          id: "msg-doc",
-        },
-        message: {
-          documentMessage: {
-            caption: "Factura del proveedor",
-            mimetype: "application/pdf",
-          },
+        documentMessage: {
+          caption: "Factura del proveedor",
+          mimetype: "application/pdf",
         },
       },
-    };
+    });
 
     const result = parseWebhookPayload(payload);
     expect(result).not.toBeNull();
@@ -176,18 +176,16 @@ describe("parseWebhookPayload", () => {
   });
 
   it("skips outgoing messages (fromMe=true)", () => {
-    const payload = {
-      message: {
-        key: {
-          remoteJid: "5212345678@s.whatsapp.net",
-          fromMe: true,
-          id: "msg-out",
-        },
-        message: {
-          conversation: "Agent reply",
-        },
+    const payload = wrapPayload({
+      key: {
+        cleanedSenderPn: "5212345678",
+        fromMe: true,
+        id: "msg-out",
       },
-    };
+      message: {
+        conversation: "Agent reply",
+      },
+    });
 
     const result = parseWebhookPayload(payload);
     expect(result).toBeNull();
@@ -197,26 +195,62 @@ describe("parseWebhookPayload", () => {
     expect(parseWebhookPayload({})).toBeNull();
   });
 
-  it("returns null for payload without message key", () => {
-    expect(parseWebhookPayload({ message: {} })).toBeNull();
+  it("returns null for non-messages.received events", () => {
+    expect(parseWebhookPayload({ event: "session.status", data: {} })).toBeNull();
+  });
+
+  it("returns null for payload without data.messages", () => {
+    expect(parseWebhookPayload({ event: "messages.received", data: {} })).toBeNull();
   });
 
   it("returns null for unrecognized message type", () => {
-    const payload = {
-      message: {
-        key: {
-          remoteJid: "5212345678@s.whatsapp.net",
-          fromMe: false,
-          id: "msg-unknown",
-        },
-        message: {
-          stickerMessage: { mimetype: "image/webp" },
-        },
+    const payload = wrapPayload({
+      key: {
+        cleanedSenderPn: "5212345678",
+        fromMe: false,
+        id: "msg-unknown",
       },
-    };
+      message: {
+        stickerMessage: { mimetype: "image/webp" },
+      },
+    });
 
     const result = parseWebhookPayload(payload);
     expect(result).toBeNull();
+  });
+
+  it("falls back to senderPn when cleanedSenderPn is missing", () => {
+    const payload = wrapPayload({
+      key: {
+        senderPn: "5212345678@s.whatsapp.net",
+        fromMe: false,
+        id: "msg-fallback",
+      },
+      message: {
+        conversation: "Test fallback",
+      },
+    });
+
+    const result = parseWebhookPayload(payload);
+    expect(result).not.toBeNull();
+    expect(result!.from).toBe("5212345678");
+  });
+
+  it("falls back to remoteJid when senderPn is also missing", () => {
+    const payload = wrapPayload({
+      key: {
+        remoteJid: "5212345678@s.whatsapp.net",
+        fromMe: false,
+        id: "msg-fallback2",
+      },
+      message: {
+        conversation: "Test fallback 2",
+      },
+    });
+
+    const result = parseWebhookPayload(payload);
+    expect(result).not.toBeNull();
+    expect(result!.from).toBe("5212345678");
   });
 });
 
@@ -235,12 +269,11 @@ describe("sendWhatsAppMessage", () => {
 
     expect(mockFetch).toHaveBeenCalledOnce();
     const [url, options] = mockFetch.mock.calls[0];
-    expect(url).toContain("/send-message/test-session-id");
+    expect(url).toBe("https://www.wasenderapi.com/api/send-message");
     expect(options.method).toBe("POST");
 
     const body = JSON.parse(options.body);
     expect(body.to).toBe("+5212345678");
-    expect(body.type).toBe("text");
     expect(body.text).toBe("✓ Tarea registrada");
   });
 
@@ -275,7 +308,7 @@ describe("downloadMedia", () => {
     expect(result.buffer).toBeInstanceOf(Buffer);
 
     const [url] = mockFetch.mock.calls[0];
-    expect(url).toContain("/download-media/test-session-id/msg-123");
+    expect(url).toBe("https://www.wasenderapi.com/api/download-media/msg-123");
   });
 
   it("throws on download failure", async () => {
