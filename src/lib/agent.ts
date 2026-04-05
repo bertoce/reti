@@ -198,6 +198,7 @@ export async function processMessage(messageId: string) {
 
     // Build the user message content
     const userContent: Anthropic.ContentBlockParam[] = [];
+    const processedPhotoUrls: string[] = [];  // collect photo URLs during processing
 
     // Handle voice notes — transcribe first
     let textContent = message.content || "";
@@ -225,10 +226,12 @@ export async function processMessage(messageId: string) {
           message.media_data
         );
 
+        processedPhotoUrls.push(photoUrl);
+
         // Store the photo URL on the message
         await supabase
           .from("site_messages")
-          .update({ media_urls: [photoUrl] })
+          .update({ media_urls: processedPhotoUrls })
           .eq("id", messageId);
 
         // Add image to Claude's input
@@ -282,7 +285,7 @@ export async function processMessage(messageId: string) {
           toolUse.name,
           toolUse.input as Record<string, unknown>,
           message.project_id,
-          message.media_urls || []
+          processedPhotoUrls
         );
 
         executedActions.push({
