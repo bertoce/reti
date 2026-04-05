@@ -15,13 +15,26 @@ export default function LoginForm() {
   useEffect(() => {
     const hash = window.location.hash;
     if (hash && hash.includes("access_token")) {
-      const supabase = createAuthClient();
-      // Supabase client auto-detects the hash and sets the session
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          router.replace("/dashboard");
-        }
-      });
+      // Parse token from hash fragment
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
+
+      if (accessToken && refreshToken) {
+        const supabase = createAuthClient();
+        supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        }).then(({ error }) => {
+          if (!error) {
+            // Clear the hash and redirect
+            window.location.replace("/dashboard");
+          } else {
+            console.error("[login] Failed to set session:", error);
+            setError("Error al iniciar sesión");
+          }
+        });
+      }
     }
   }, [router]);
 
