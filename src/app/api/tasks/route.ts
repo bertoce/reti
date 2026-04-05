@@ -3,6 +3,7 @@
 
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
+import { calculateTaskSummary } from "@/lib/task-summary";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -42,16 +43,7 @@ export async function GET(request: Request) {
     .select("status, category, expense_amount")
     .eq("project_id", projectId);
 
-  const summary = {
-    total: allTasks?.length || 0,
-    pending: allTasks?.filter((t) => t.status === "pending").length || 0,
-    in_progress: allTasks?.filter((t) => t.status === "in_progress").length || 0,
-    completed: allTasks?.filter((t) => t.status === "completed").length || 0,
-    blocked: allTasks?.filter((t) => t.status === "blocked").length || 0,
-    total_expenses: allTasks
-      ?.filter((t) => t.category === "expense")
-      .reduce((sum, t) => sum + (t.expense_amount || 0), 0) || 0,
-  };
+  const summary = calculateTaskSummary((allTasks || []) as any[]);
 
   return NextResponse.json({ tasks: data, summary });
 }
