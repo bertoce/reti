@@ -27,8 +27,11 @@ vi.mock("@/lib/wasender", () => ({
   parseWebhookPayload: vi.fn(),
 }));
 
-// Mock fetch for the fire-and-forget agent trigger
-vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+// Mock the agent's processMessage
+const mockProcessMessage = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/agent", () => ({
+  processMessage: (...args: unknown[]) => mockProcessMessage(...args),
+}));
 
 import { POST } from "@/app/api/webhooks/whatsapp/route";
 import { verifyWebhookSignature, parseWebhookPayload } from "@/lib/wasender";
@@ -67,7 +70,7 @@ describe("POST /api/webhooks/whatsapp", () => {
     expect(res.status).toBe(401);
   });
 
-  it("stores an incoming text message and triggers agent", async () => {
+  it("stores an incoming text message and processes it with agent", async () => {
     vi.mocked(parseWebhookPayload).mockReturnValueOnce({
       messageId: "wa-msg-123",
       from: "+5212345678",
@@ -92,9 +95,12 @@ describe("POST /api/webhooks/whatsapp", () => {
     });
 
     const res = await POST(createRequest({
-      message: {
-        key: { remoteJid: "5212345678@s.whatsapp.net", fromMe: false, id: "wa-msg-123" },
-        message: { conversation: "Terminamos el colado" },
+      event: "messages.received",
+      data: {
+        messages: {
+          key: { cleanedSenderPn: "5212345678", fromMe: false, id: "wa-msg-123" },
+          message: { conversation: "Terminamos el colado" },
+        },
       },
     }));
 
@@ -103,11 +109,8 @@ describe("POST /api/webhooks/whatsapp", () => {
     expect(json.ok).toBe(true);
     expect(json.message_id).toBe("msg-new-1");
 
-    // Verify the agent was triggered
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/agent/process"),
-      expect.objectContaining({ method: "POST" })
-    );
+    // Verify the agent processed the message inline
+    expect(mockProcessMessage).toHaveBeenCalledWith("msg-new-1");
   });
 
   it("deduplicates messages by wa_message_id", async () => {
@@ -123,9 +126,12 @@ describe("POST /api/webhooks/whatsapp", () => {
     mockLimit.mockReturnValueOnce({ data: [{ id: "existing-msg" }], error: null });
 
     const res = await POST(createRequest({
-      message: {
-        key: { remoteJid: "5212345678@s.whatsapp.net", fromMe: false, id: "wa-msg-dup" },
-        message: { conversation: "Duplicado" },
+      event: "messages.received",
+      data: {
+        messages: {
+          key: { cleanedSenderPn: "5212345678", fromMe: false, id: "wa-msg-dup" },
+          message: { conversation: "Duplicado" },
+        },
       },
     }));
 
@@ -161,12 +167,56 @@ describe("POST /api/webhooks/whatsapp", () => {
     });
 
     const res = await POST(createRequest({
-      message: {
-        key: { remoteJid: "9999999999@s.whatsapp.net", fromMe: false, id: "wa-msg-orphan" },
-        message: { conversation: "Unknown number" },
+      event: "messages.received",
+      data: {
+        messages: {
+          key: { cleanedSenderPn: "9999999999", fromMe: false, id: "wa-msg-orphan" },
+          message: { conversation: "Unknown number" },
+        },
       },
     }));
 
     expect(res.status).toBe(200);
+  });
+
+  it("still returns 200 if agent processing fails", async () => {
+    vi.mocked(parseWebhookPayload).mockReturnValueOnce({
+      messageId: "wa-msg-fail",
+      from: "+5212345678",
+      type: "text",
+      text: "Agent will fail",
+      hasMedia: false,
+    });
+
+    // No duplicate
+    mockLimit.mockReturnValueOnce({ data: [], error: null });
+
+    // Project found
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "proj-1" },
+      error: null,
+    });
+
+    // Message inserted
+    mockSingle.mockResolvedValueOnce({
+      data: { id: "msg-fail-1" },
+      error: null,
+    });
+
+    // Agent throws
+    mockProcessMessage.mockRejectedValueOnce(new Error("Claude API down"));
+
+    const res = await POST(createRequest({
+      event: "messages.received",
+      data: {
+        messages: {
+          key: { cleanedSenderPn: "5212345678", fromMe: false, id: "wa-msg-fail" },
+          message: { conversation: "Agent will fail" },
+        },
+      },
+    }));
+
+    expect(res.status).toBe(200);
+    expect(mockProcessMessage).toHaveBeenCalledWith("msg-fail-1");
   });
 });
