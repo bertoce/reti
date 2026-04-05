@@ -13,6 +13,7 @@ function createChain() {
   chain.insert = mockInsert.mockReturnValue(chain);
   chain.select = mockSelect.mockReturnValue(chain);
   chain.eq = mockEq.mockReturnValue(chain);
+  chain.in = vi.fn().mockReturnValue(chain);
   chain.limit = mockLimit.mockReturnValue(chain);
   chain.single = mockSingle;
   return chain;
