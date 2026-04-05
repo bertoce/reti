@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { parseWebhookPayload, verifyWebhookSignature } from "@/lib/wasender";
+import { processMessage } from "@/lib/agent";
 
 export async function POST(request: Request) {
   try {
@@ -90,20 +91,17 @@ export async function POST(request: Request) {
 
     console.log(`[webhook] Stored message ${message.id} from ${incoming.from} (${incoming.type})`);
 
-    // Trigger agent processing asynchronously
-    // In production, this would be a queue worker or edge function
-    // For v0, we fire-and-forget to the processing endpoint
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${request.headers.get("host")}`;
+    // Process the message inline — Vercel kills fire-and-forget fetches
+    // after the response is sent, so we process before returning
+    try {
+      console.log(`[webhook] Processing message ${message.id} with agent...`);
+      await processMessage(message.id);
+      console.log(`[webhook] Agent processing complete for ${message.id}`);
+    } catch (agentError) {
+      console.error("[webhook] Agent processing failed:", agentError);
+      // Don't fail the webhook — the message is stored, we can retry later
+    }
 
-    fetch(`${baseUrl}/api/agent/process`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message_id: message.id }),
-    }).catch((err) => {
-      console.error("[webhook] Failed to trigger agent:", err);
-    });
-
-    // Return 200 immediately — WhatsApp expects a fast response
     return NextResponse.json({ ok: true, message_id: message.id });
   } catch (error) {
     console.error("[webhook] Error:", error);
