@@ -109,9 +109,14 @@ export type IncomingMessage = {
 
 export function parseWebhookPayload(body: Record<string, unknown>): IncomingMessage | null {
   try {
-    // WASenderApi webhook payload structure
-    // Adapt this based on actual payload — structure may vary
-    const message = body.message as Record<string, unknown> | undefined;
+    // WASenderApi sends: { event, sessionId, data: { messages: { key, message, ... } }, timestamp }
+    // Only process "messages.received" events
+    if (body.event !== "messages.received") return null;
+
+    const data = body.data as Record<string, unknown> | undefined;
+    if (!data) return null;
+
+    const message = data.messages as Record<string, unknown> | undefined;
     if (!message) return null;
 
     const key = message.key as Record<string, unknown> | undefined;
@@ -122,7 +127,10 @@ export function parseWebhookPayload(body: Record<string, unknown>): IncomingMess
     // Skip outgoing messages
     if (key.fromMe) return null;
 
-    const from = (key.remoteJid as string)?.replace("@s.whatsapp.net", "") || "";
+    // WASenderApi uses LID format for remoteJid but provides senderPn with the real phone
+    const from = (key.cleanedSenderPn as string) ||
+                 (key.senderPn as string)?.replace("@s.whatsapp.net", "") ||
+                 (key.remoteJid as string)?.replace("@s.whatsapp.net", "") || "";
     const messageId = (key.id as string) || "";
 
     // Determine message type and content
