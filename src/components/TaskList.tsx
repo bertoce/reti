@@ -8,11 +8,12 @@ import TaskCard from "./TaskCard";
 type Props = {
   tasks: SiteTask[];
   onSelectTask: (task: SiteTask) => void;
+  onToggleComplete?: (task: SiteTask) => void;
 };
 
 type StatusFilter = "all" | "pending" | "in_progress" | "completed" | "blocked";
 
-export default function TaskList({ tasks, onSelectTask }: Props) {
+export default function TaskList({ tasks, onSelectTask, onToggleComplete }: Props) {
   const [filter, setFilter] = useState<StatusFilter>("all");
 
   const filteredTasks = filter === "all"
@@ -43,7 +44,7 @@ export default function TaskList({ tasks, onSelectTask }: Props) {
             className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
               filter === opt.value
                 ? "bg-foreground text-background"
-                : "bg-gray-100 text-muted hover:bg-gray-200"
+                : "bg-[#F0F0EE] text-muted hover:bg-border"
             }`}
           >
             {opt.label}
@@ -76,7 +77,7 @@ export default function TaskList({ tasks, onSelectTask }: Props) {
                 )}
                 <div className="space-y-2">
                   {group.map((task) => (
-                    <TaskCard key={task.id} task={task} onSelect={onSelectTask} />
+                    <TaskCard key={task.id} task={task} onSelect={onSelectTask} onToggleComplete={onToggleComplete} />
                   ))}
                 </div>
               </div>

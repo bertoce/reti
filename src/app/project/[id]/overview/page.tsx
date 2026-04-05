@@ -5,9 +5,10 @@ import { type SiteTask, type SiteMessage } from "@/lib/supabase";
 import SummaryCards from "@/components/SummaryCards";
 import ActivityFeed from "@/components/ActivityFeed";
 import ChatLog from "@/components/ChatLog";
+import ClientUpdatesTab from "@/components/ClientUpdatesTab";
 import { useParams } from "next/navigation";
 
-type Tab = "overview" | "activity" | "chat";
+type Tab = "overview" | "activity" | "chat" | "clients";
 
 type ProjectData = {
   name: string;
@@ -75,6 +76,7 @@ export default function OverviewPage() {
     { value: "overview", label: "Resumen" },
     { value: "activity", label: "Actividad" },
     { value: "chat", label: "Chat" },
+    { value: "clients", label: "Clientes" },
   ];
 
   if (loading) {
@@ -88,9 +90,9 @@ export default function OverviewPage() {
   return (
     <div className="min-h-screen bg-background" data-testid="overview-page">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-card border-b border-border">
+      <header className="sticky top-0 z-40 bg-card border-b border-border bg-stars-faint">
         <div className="px-4 py-3">
-          <p className="text-xs text-muted">Vista del desarrollador</p>
+          <p className="section-label">Vista del desarrollador</p>
           <h1 className="text-base font-semibold text-foreground" data-testid="project-name">
             {project?.name || "Proyecto"}
           </h1>
@@ -108,7 +110,7 @@ export default function OverviewPage() {
             >
               {t.label}
               {tab === t.value && (
-                <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-foreground rounded-full" />
+                <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-accent rounded-full" />
               )}
             </button>
           ))}
@@ -131,6 +133,10 @@ export default function OverviewPage() {
           messages={messages}
           residenteName={project?.residente_name || "Residente"}
         />
+      )}
+
+      {tab === "clients" && (
+        <ClientUpdatesTab projectId={projectId} />
       )}
     </div>
   );

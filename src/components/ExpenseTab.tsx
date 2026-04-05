@@ -45,7 +45,7 @@ export default function ExpenseTab({ tasks, onSelectTask }: Props) {
             <button
               key={task.id}
               onClick={() => onSelectTask(task)}
-              className="w-full text-left bg-card rounded-xl border border-border p-4 active:bg-gray-50 transition-colors"
+              className="w-full text-left bg-card rounded-lg border border-border p-4 active:bg-gray-50 transition-colors"
               data-testid="expense-card"
             >
               <div className="flex items-center justify-between">
@@ -90,7 +90,7 @@ function SummaryCard({
 }) {
   return (
     <div
-      className={`rounded-xl p-3 text-center ${
+      className={`rounded-lg p-3 text-center ${
         highlight ? "bg-foreground text-background" : "bg-card border border-border"
       }`}
       data-testid="summary-card"

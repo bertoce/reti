@@ -196,6 +196,12 @@ export async function processMessage(messageId: string) {
     // Build the system prompt with project context
     const systemPrompt = await buildSystemPrompt(message.project_id);
 
+    // Load conversation history for context (last 10 messages)
+    const conversationHistory = await buildConversationHistory(
+      message.project_id,
+      messageId
+    );
+
     // Build the user message content
     const userContent: Anthropic.ContentBlockParam[] = [];
     const processedPhotoUrls: string[] = [];  // collect photo URLs during processing
@@ -259,13 +265,17 @@ export async function processMessage(messageId: string) {
       return;
     }
 
-    // Call Claude
+    // Call Claude with conversation history for context
+    const messages: Anthropic.Messages.MessageParam[] = [
+      ...conversationHistory,
+      { role: "user", content: userContent },
+    ];
     let response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
       system: systemPrompt,
       tools,
-      messages: [{ role: "user", content: userContent }],
+      messages,
     });
 
     // Process tool calls in a loop (Claude may chain multiple tools)
@@ -310,6 +320,7 @@ export async function processMessage(messageId: string) {
         system: systemPrompt,
         tools,
         messages: [
+          ...conversationHistory,
           { role: "user", content: userContent },
           { role: "assistant", content: response.content },
           { role: "user", content: toolResults },
@@ -463,4 +474,211 @@ async function executeTool(
     default:
       return { success: false, error: `Unknown tool: ${toolName}` };
   }
+}
+
+// ============================================================
+// Build conversation history from recent messages
+// Returns alternating user/assistant messages for Claude context
+// ============================================================
+export async function buildConversationHistory(
+  projectId: string,
+  excludeMessageId?: string
+): Promise<Anthropic.Messages.MessageParam[]> {
+  const supabase = createServiceClient();
+
+  const { data: recentMessages } = await supabase
+    .from("site_messages")
+    .select("id, direction, content, message_type, created_at")
+    .eq("project_id", projectId)
+    .eq("processed", true)
+    .order("created_at", { ascending: true })
+    .limit(20); // fetch more to filter
+
+  if (!recentMessages || recentMessages.length === 0) return [];
+
+  // Filter out the current message and take last 10
+  const filtered = recentMessages
+    .filter((m) => m.id !== excludeMessageId && m.content)
+    .slice(-10);
+
+  if (filtered.length === 0) return [];
+
+  // Convert to Claude message format with alternating roles
+  // Anthropic requires alternating user/assistant — merge consecutive same-role
+  const history: Anthropic.Messages.MessageParam[] = [];
+
+  for (const msg of filtered) {
+    const role = msg.direction === "inbound" ? "user" : "assistant";
+    const prefix = msg.message_type === "voice" ? "[Nota de voz] " : "";
+    const text = prefix + (msg.content || "");
+
+    if (history.length > 0 && history[history.length - 1].role === role) {
+      // Merge consecutive same-role messages
+      const last = history[history.length - 1];
+      last.content = (last.content as string) + "\n" + text;
+    } else {
+      history.push({ role, content: text });
+    }
+  }
+
+  // Ensure history starts with user (Claude requirement)
+  if (history.length > 0 && history[0].role !== "user") {
+    history.shift();
+  }
+
+  // Ensure alternating by trimming any violations
+  const cleaned: Anthropic.Messages.MessageParam[] = [];
+  for (const msg of history) {
+    if (cleaned.length === 0 || cleaned[cleaned.length - 1].role !== msg.role) {
+      cleaned.push(msg);
+    } else {
+      // Merge into previous
+      cleaned[cleaned.length - 1].content =
+        (cleaned[cleaned.length - 1].content as string) + "\n" + (msg.content as string);
+    }
+  }
+
+  return cleaned;
+}
+
+// ============================================================
+// Chat with agent from dashboard (lighter weight than processMessage)
+// Used for task-context conversations from the web UI
+// ============================================================
+export async function chatWithAgent(
+  projectId: string,
+  userMessage: string,
+  taskContext?: { id: string; title: string; description?: string; status: string; category: string }
+): Promise<string> {
+  const systemPrompt = await buildSystemPrompt(projectId);
+
+  // Add task context if provided
+  let enrichedSystem = systemPrompt;
+  if (taskContext) {
+    enrichedSystem += `\n\nCONTEXT: The user is asking about task "${taskContext.title}" (${taskContext.category}, ${taskContext.status}). Task ID: ${taskContext.id}${taskContext.description ? `. Description: ${taskContext.description}` : ""}`;
+  }
+
+  // Load conversation history
+  const conversationHistory = await buildConversationHistory(projectId);
+
+  const messages: Anthropic.Messages.MessageParam[] = [
+    ...conversationHistory,
+    { role: "user", content: userMessage },
+  ];
+
+  let response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1024,
+    system: enrichedSystem,
+    tools,
+    messages,
+  });
+
+  // Process tool calls in a loop
+  while (response.stop_reason === "tool_use") {
+    const toolUseBlocks = response.content.filter(
+      (block: Anthropic.Messages.ContentBlock): block is Anthropic.Messages.ToolUseBlock =>
+        block.type === "tool_use"
+    );
+
+    const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
+
+    for (const toolUse of toolUseBlocks) {
+      const result = await executeTool(
+        toolUse.name,
+        toolUse.input as Record<string, unknown>,
+        projectId,
+        []
+      );
+
+      toolResults.push({
+        type: "tool_result",
+        tool_use_id: toolUse.id,
+        content: JSON.stringify(result),
+      });
+    }
+
+    response = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1024,
+      system: enrichedSystem,
+      tools,
+      messages: [
+        ...messages,
+        { role: "assistant", content: response.content },
+        { role: "user", content: toolResults },
+      ],
+    });
+  }
+
+  const textBlocks = response.content.filter(
+    (block: Anthropic.Messages.ContentBlock): block is Anthropic.Messages.TextBlock =>
+      block.type === "text"
+  );
+  return textBlocks.map((b: Anthropic.Messages.TextBlock) => b.text).join("\n");
+}
+
+// ============================================================
+// Generate a client update draft
+// Used by the developer to compose buyer messages
+// ============================================================
+export async function generateClientDraft(
+  projectId: string,
+  templateType: "weekly" | "milestone" | "custom",
+  customPrompt?: string
+): Promise<{ text: string; suggestedPhotos: string[] }> {
+  const supabase = createServiceClient();
+
+  // Load project
+  const { data: project } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("id", projectId)
+    .single();
+
+  if (!project) throw new Error(`Project ${projectId} not found`);
+
+  // Load recent tasks for context
+  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: recentTasks } = await supabase
+    .from("site_tasks")
+    .select("title, category, status, photos, created_at")
+    .eq("project_id", projectId)
+    .gte("created_at", oneWeekAgo)
+    .order("created_at", { ascending: false });
+
+  const taskSummary = (recentTasks || [])
+    .map((t) => `- ${t.title} (${t.category}, ${t.status})`)
+    .join("\n");
+
+  // Collect photos from recent tasks
+  const suggestedPhotos = (recentTasks || [])
+    .flatMap((t) => t.photos || [])
+    .slice(0, 6);
+
+  const templatePrompts: Record<string, string> = {
+    weekly: `Write a warm, professional weekly progress update for the home buyer. Include what was accomplished this week based on the task list. Keep it under 200 words. Write in Spanish. Use a friendly, confident tone. Sign off as the developer's team.`,
+    milestone: `Write a milestone announcement for the home buyer celebrating a major construction achievement. Reference the completed tasks. Keep it under 150 words. Write in Spanish. Exciting but professional.`,
+    custom: customPrompt || "Write a brief update for the home buyer in Spanish.",
+  };
+
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 512,
+    system: `You are writing a WhatsApp message from ${project.developer_name || "the developer"} to their home buyers about project "${project.name}".`,
+    messages: [
+      {
+        role: "user",
+        content: `${templatePrompts[templateType]}\n\nThis week's tasks:\n${taskSummary || "(no tasks this week)"}`,
+      },
+    ],
+  });
+
+  const textBlocks = response.content.filter(
+    (block: Anthropic.Messages.ContentBlock): block is Anthropic.Messages.TextBlock =>
+      block.type === "text"
+  );
+  const text = textBlocks.map((b: Anthropic.Messages.TextBlock) => b.text).join("\n");
+
+  return { text, suggestedPhotos };
 }

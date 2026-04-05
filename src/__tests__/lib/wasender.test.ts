@@ -9,6 +9,7 @@ import {
   decryptMedia,
   verifyWebhookSignature,
   parseWebhookPayload,
+  fetchWithRetry,
   type IncomingMessage,
 } from "@/lib/wasender";
 
@@ -402,5 +403,125 @@ describe("decryptMedia", () => {
     await expect(decryptMedia("msg-gone", sampleMediaData)).rejects.toThrow(
       "Failed to download decrypted media: 404"
     );
+  });
+});
+
+describe("fetchWithRetry", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("returns response on success (no retry needed)", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true }),
+    });
+
+    const res = await fetchWithRetry("https://api.test.com", { method: "GET" });
+    expect(res.status).toBe(200);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries on 429 and returns success on second attempt", async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        headers: new Headers(),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+      });
+
+    const res = await fetchWithRetry("https://api.test.com", { method: "GET" });
+    expect(res.status).toBe(200);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns 429 response after max retries exhausted", async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 429,
+      headers: new Headers(),
+    });
+
+    const res = await fetchWithRetry("https://api.test.com", { method: "GET" }, 2);
+    expect(res.status).toBe(429);
+    expect(mockFetch).toHaveBeenCalledTimes(3); // initial + 2 retries
+  });
+
+  it("does not retry on non-429 errors", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+    });
+
+    const res = await fetchWithRetry("https://api.test.com", { method: "GET" });
+    expect(res.status).toBe(500);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("respects Retry-After header", async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        headers: new Headers({ "Retry-After": "2" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+      });
+
+    const res = await fetchWithRetry("https://api.test.com", { method: "GET" });
+    expect(res.status).toBe(200);
+  });
+});
+
+describe("parseWebhookPayload album support", () => {
+  it("extracts albumId and expectedImageCount from album messages", () => {
+    const body = {
+      event: "messages.received",
+      data: {
+        messages: {
+          key: { id: "msg-album-1", cleanedSenderPn: "5212345678", fromMe: false },
+          message: {
+            imageMessage: { caption: "Avance", mimetype: "image/jpeg" },
+            albumMessage: { albumId: "album-xyz", expectedImageCount: 3 },
+          },
+        },
+      },
+    };
+
+    const result = parseWebhookPayload(body);
+    expect(result).not.toBeNull();
+    expect(result!.albumId).toBe("album-xyz");
+    expect(result!.albumExpectedCount).toBe(3);
+  });
+
+  it("returns undefined album fields for non-album images", () => {
+    const body = {
+      event: "messages.received",
+      data: {
+        messages: {
+          key: { id: "msg-single", cleanedSenderPn: "5212345678", fromMe: false },
+          message: {
+            imageMessage: { caption: "Foto individual", mimetype: "image/jpeg" },
+          },
+        },
+      },
+    };
+
+    const result = parseWebhookPayload(body);
+    expect(result).not.toBeNull();
+    expect(result!.albumId).toBeUndefined();
+    expect(result!.albumExpectedCount).toBeUndefined();
   });
 });

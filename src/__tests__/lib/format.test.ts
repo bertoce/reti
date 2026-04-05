@@ -72,8 +72,8 @@ describe("getCategoryColor", () => {
     }
   });
 
-  it("returns gray for unknown categories", () => {
-    expect(getCategoryColor("unknown")).toContain("gray");
+  it("returns muted for unknown categories", () => {
+    expect(getCategoryColor("unknown")).toContain("muted");
   });
 });
 

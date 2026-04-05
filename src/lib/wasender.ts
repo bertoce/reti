@@ -13,10 +13,39 @@ function getHeaders() {
 }
 
 // ============================================================
+// Fetch with exponential backoff on 429 (rate limit)
+// ============================================================
+export async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries: number = 3
+): Promise<Response> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, options);
+
+    if (response.status !== 429 || attempt === maxRetries) {
+      return response;
+    }
+
+    // Parse Retry-After header or use exponential backoff
+    const retryAfter = response.headers.get("Retry-After");
+    const waitMs = retryAfter
+      ? parseInt(retryAfter, 10) * 1000
+      : Math.min(1000 * Math.pow(2, attempt), 30000);
+
+    console.log(`[wasender] Rate limited (429), retrying in ${waitMs}ms (attempt ${attempt + 1}/${maxRetries})`);
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+  }
+
+  // Should never reach here, but TypeScript needs it
+  throw new Error("fetchWithRetry: exceeded max retries");
+}
+
+// ============================================================
 // Send a text message via WhatsApp
 // ============================================================
 export async function sendWhatsAppMessage(to: string, text: string) {
-  const response = await fetch(
+  const response = await fetchWithRetry(
     `${WASENDER_BASE_URL}/send-message`,
     {
       method: "POST",
@@ -50,7 +79,7 @@ export async function decryptMedia(
   contentType: string;
 }> {
   // Step 1: Call decrypt-media to get a temporary public URL
-  const decryptResponse = await fetch(
+  const decryptResponse = await fetchWithRetry(
     `${WASENDER_BASE_URL}/decrypt-media`,
     {
       method: "POST",
@@ -127,6 +156,8 @@ export type IncomingMessage = {
   caption?: string;    // caption (for image messages)
   hasMedia: boolean;
   mediaData?: Record<string, unknown>;  // raw media message data for decrypt-media API
+  albumId?: string;             // album group ID (for multi-photo messages)
+  albumExpectedCount?: number;  // expected number of images in the album
 };
 
 export function parseWebhookPayload(body: Record<string, unknown>): IncomingMessage | null {
@@ -169,6 +200,16 @@ export function parseWebhookPayload(body: Record<string, unknown>): IncomingMess
 
     if (messageContent.imageMessage) {
       const imageMsg = messageContent.imageMessage as Record<string, unknown>;
+
+      // Check for album (multi-photo) messages
+      const albumMessage = messageContent.albumMessage as Record<string, unknown> | undefined;
+      const albumId = albumMessage
+        ? (albumMessage.albumId as string) || undefined
+        : undefined;
+      const albumExpectedCount = albumMessage
+        ? (albumMessage.expectedImageCount as number) || undefined
+        : undefined;
+
       return {
         messageId,
         from,
@@ -176,6 +217,8 @@ export function parseWebhookPayload(body: Record<string, unknown>): IncomingMess
         caption: (imageMsg.caption as string) || undefined,
         hasMedia: true,
         mediaData: { imageMessage: imageMsg },
+        albumId,
+        albumExpectedCount,
       };
     }
 

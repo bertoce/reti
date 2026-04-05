@@ -12,23 +12,51 @@ import {
 type Props = {
   task: SiteTask;
   onSelect: (task: SiteTask) => void;
+  onToggleComplete?: (task: SiteTask) => void;
 };
 
-export default function TaskCard({ task, onSelect }: Props) {
+export default function TaskCard({ task, onSelect, onToggleComplete }: Props) {
   const priorityIcon = getPriorityIndicator(task.priority);
   const hasPhoto = task.photos && task.photos.length > 0;
   const isExpense = task.category === "expense" && task.expense_amount;
+  const isCompleted = task.status === "completed";
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleComplete?.(task);
+  };
 
   return (
     <button
       onClick={() => onSelect(task)}
-      className="w-full text-left bg-card rounded-xl border border-border p-4 active:bg-gray-50 transition-colors"
+      className="w-full text-left bg-card rounded-lg border border-border p-4 active:bg-[#F0F0EE] transition-colors"
       data-testid="task-card"
     >
       <div className="flex items-start gap-3">
+        {/* Completion toggle */}
+        {onToggleComplete && (
+          <div
+            onClick={handleToggle}
+            className={`shrink-0 mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
+              isCompleted
+                ? "bg-success border-success text-white"
+                : "border-border hover:border-accent"
+            }`}
+            role="checkbox"
+            aria-checked={isCompleted}
+            data-testid="completion-toggle"
+          >
+            {isCompleted && (
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+        )}
+
         {/* Thumbnail */}
         {hasPhoto && (
-          <div className="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-gray-100">
+          <div className="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-[#F0F0EE]">
             <img
               src={task.photos![0]}
               alt=""
@@ -41,7 +69,7 @@ export default function TaskCard({ task, onSelect }: Props) {
           {/* Title row */}
           <div className="flex items-center gap-2">
             {priorityIcon && <span className="text-sm">{priorityIcon}</span>}
-            <h3 className="text-sm font-medium text-foreground truncate">
+            <h3 className={`text-sm font-medium truncate ${isCompleted ? "text-muted line-through" : "text-foreground"}`}>
               {task.title}
             </h3>
           </div>
@@ -49,7 +77,7 @@ export default function TaskCard({ task, onSelect }: Props) {
           {/* Meta row */}
           <div className="flex items-center gap-2 mt-1.5">
             <span
-              className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${getCategoryColor(task.category)}`}
+              className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${getCategoryColor(task.category)}`}
               data-testid="category-badge"
             >
               {getCategoryLabel(task.category)}

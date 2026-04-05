@@ -1,5 +1,5 @@
-// GET /api/tasks?project_id=...&status=...&category=...
-// Returns tasks for a project with optional filters
+// GET /api/tasks — list tasks with filters
+// POST /api/tasks — create a new task from the dashboard
 
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
@@ -54,4 +54,42 @@ export async function GET(request: Request) {
   };
 
   return NextResponse.json({ tasks: data, summary });
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { project_id, title, category, priority, description } = body;
+
+    if (!project_id || !title || !category) {
+      return NextResponse.json(
+        { error: "project_id, title, and category are required" },
+        { status: 400 }
+      );
+    }
+
+    const supabase = createServiceClient();
+
+    const { data, error } = await supabase
+      .from("site_tasks")
+      .insert({
+        project_id,
+        title,
+        category,
+        priority: priority || "normal",
+        description: description || null,
+        status: "pending",
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ task: data }, { status: 201 });
+  } catch (error) {
+    console.error("[tasks] POST error:", error);
+    return NextResponse.json({ error: "Failed to create task" }, { status: 500 });
+  }
 }

@@ -54,7 +54,7 @@ export default function SummaryCards({ summary }: Props) {
       </div>
 
       {/* Activity indicator */}
-      <div className="bg-card border border-border rounded-xl px-4 py-3 flex items-center justify-between" data-testid="last-activity">
+      <div className="bg-card border border-border rounded-lg px-4 py-3 flex items-center justify-between" data-testid="last-activity">
         <span className="text-xs text-muted">Última actividad</span>
         <span className="text-sm font-medium text-foreground">
           {summary.last_activity
@@ -103,7 +103,7 @@ function Card({
 
   return (
     <div
-      className={`rounded-xl px-3 py-3 ${accentClasses[accent]}`}
+      className={`rounded-lg px-3 py-3 ${accentClasses[accent]}`}
       data-testid="summary-stat-card"
     >
       <p className={`text-xs ${labelClasses[accent]}`}>{label}</p>

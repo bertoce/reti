@@ -75,15 +75,28 @@ export type SitePhoto = {
 export type SiteMessage = {
   id: string;
   project_id: string | null;
-  direction: "inbound" | "outbound";
+  direction: "inbound" | "outbound" | "outbound_client";
   message_type: "text" | "image" | "voice" | "document";
   content: string | null;
   media_urls: string[] | null;
+  media_data?: Record<string, unknown> | null;
   agent_intent: string | null;
   agent_actions: Record<string, unknown>[] | null;
   task_id: string | null;
   wa_message_id: string | null;
   sender_phone: string | null;
   processed: boolean;
+  album_id: string | null;
+  album_expected_count: number | null;
+  created_at: string;
+};
+
+export type Client = {
+  id: string;
+  project_id: string;
+  name: string;
+  phone: string;
+  unit: string | null;
+  opted_in: boolean;
   created_at: string;
 };
