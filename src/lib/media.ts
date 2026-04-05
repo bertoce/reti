@@ -21,8 +21,13 @@ export async function processMedia(
   // Decrypt and download from WASenderApi
   const { buffer, contentType } = await decryptMedia(messageId, mediaData);
 
+  // Use the known mimetype from the webhook payload when available
+  // (the decrypt response may return application/octet-stream)
+  const knownMimetype = extractMimetype(mediaData) || contentType;
+  const baseMimetype = knownMimetype.split(";")[0].trim();
+
   // Determine file extension
-  const ext = extensionFromContentType(contentType);
+  const ext = extensionFromContentType(baseMimetype);
   const timestamp = Date.now();
   const path = `${projectId}/${category}/${timestamp}.${ext}`;
 
@@ -31,7 +36,7 @@ export async function processMedia(
   const { error } = await supabase.storage
     .from(BUCKET)
     .upload(path, buffer, {
-      contentType,
+      contentType: baseMimetype,
       upsert: false,
     });
 
@@ -65,10 +70,17 @@ export async function transcribeVoiceNote(
   // Decrypt and download the audio from WhatsApp
   const { buffer, contentType } = await decryptMedia(messageId, mediaData);
 
+  // Use the known mimetype from the webhook payload (more reliable than the
+  // download response header, which may return application/octet-stream)
+  const audioMsg = mediaData.audioMessage as Record<string, unknown> | undefined;
+  const knownMimetype = (audioMsg?.mimetype as string) || contentType;
+  // Strip codec suffix for content-type matching (e.g. "audio/ogg; codecs=opus" → "audio/ogg")
+  const baseMimetype = knownMimetype.split(";")[0].trim();
+
   // Send to Groq Whisper for transcription
   const formData = new FormData();
-  const ext = extensionFromContentType(contentType);
-  formData.append("file", new Blob([new Uint8Array(buffer)], { type: contentType }), `voice.${ext}`);
+  const ext = extensionFromContentType(baseMimetype);
+  formData.append("file", new Blob([new Uint8Array(buffer)], { type: baseMimetype }), `voice.${ext}`);
   formData.append("model", "whisper-large-v3");
   formData.append("language", "es"); // Spanish
 
@@ -93,6 +105,15 @@ export async function transcribeVoiceNote(
 // ============================================================
 // Helpers
 // ============================================================
+// Extract mimetype from raw mediaData (audioMessage, imageMessage, etc.)
+function extractMimetype(mediaData: Record<string, unknown>): string | null {
+  for (const key of ["audioMessage", "imageMessage", "documentMessage", "videoMessage"]) {
+    const msg = mediaData[key] as Record<string, unknown> | undefined;
+    if (msg?.mimetype) return msg.mimetype as string;
+  }
+  return null;
+}
+
 function extensionFromContentType(contentType: string): string {
   const map: Record<string, string> = {
     "image/jpeg": "jpg",

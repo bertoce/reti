@@ -103,21 +103,22 @@ describe("processMedia", () => {
     );
   });
 
-  it("uses correct file extension for different content types", async () => {
-    const contentTypes = [
-      { type: "image/jpeg", ext: "jpg" },
-      { type: "image/png", ext: "png" },
-      { type: "image/webp", ext: "webp" },
-      { type: "audio/ogg", ext: "ogg" },
-      { type: "application/pdf", ext: "pdf" },
+  it("uses correct file extension based on mediaData mimetype", async () => {
+    const cases = [
+      { mediaData: { imageMessage: { mimetype: "image/jpeg" } }, ext: "jpg" },
+      { mediaData: { imageMessage: { mimetype: "image/png" } }, ext: "png" },
+      { mediaData: { imageMessage: { mimetype: "image/webp" } }, ext: "webp" },
+      { mediaData: { audioMessage: { mimetype: "audio/ogg; codecs=opus" } }, ext: "ogg" },
+      { mediaData: { documentMessage: { mimetype: "application/pdf" } }, ext: "pdf" },
     ];
 
-    for (const { type, ext } of contentTypes) {
+    for (const { mediaData, ext } of cases) {
       vi.clearAllMocks();
 
+      // decryptMedia may return generic content-type — we rely on mediaData mimetype
       mockDecrypt.mockResolvedValueOnce({
         buffer: Buffer.from("data"),
-        contentType: type,
+        contentType: "application/octet-stream",
       });
 
       const mockUpload = vi.fn().mockResolvedValueOnce({ error: null });
@@ -134,7 +135,7 @@ describe("processMedia", () => {
         },
       } as any);
 
-      await processMedia("msg-123", "proj-1", "general", sampleImageMediaData);
+      await processMedia("msg-123", "proj-1", "general", mediaData);
 
       const uploadPath = mockUpload.mock.calls[0][0] as string;
       expect(uploadPath).toMatch(new RegExp(`\\.${ext}$`));
