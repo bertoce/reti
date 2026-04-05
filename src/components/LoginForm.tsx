@@ -1,12 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createAuthClient } from "@/lib/auth";
 
 export default function LoginForm() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Handle magic link token in URL hash (implicit flow)
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes("access_token")) {
+      const supabase = createAuthClient();
+      // Supabase client auto-detects the hash and sets the session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          router.replace("/dashboard");
+        }
+      });
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
