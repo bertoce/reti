@@ -10,3 +10,4 @@ process.env.WASENDER_SESSION_ID = "test-session-id";
 process.env.WASENDER_WEBHOOK_SECRET = "test-webhook-secret";
 process.env.GROQ_API_KEY = "gsk_test-groq-key";
 process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
