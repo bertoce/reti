@@ -51,42 +51,48 @@ export default function ProjectSetup({ userEmail }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" data-testid="project-setup-form">
+    <form onSubmit={handleSubmit} className="space-y-8" data-testid="project-setup-form">
       <div>
-        <label className="section-label mb-2 block">Nombre del proyecto</label>
+        <h3 className="text-base font-semibold text-foreground tracking-tight mb-6">
+          Nuevo proyecto
+        </h3>
+      </div>
+
+      <div>
+        <label className="section-label block mb-3">Nombre del proyecto</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Casa Reforma 15"
-          className="w-full border-b border-border py-3 text-sm text-foreground bg-transparent focus:border-accent focus:outline-none"
+          className="input-editorial"
           data-testid="project-name-input"
         />
       </div>
 
       <div>
-        <label className="section-label mb-2 block">Nombre del residente</label>
+        <label className="section-label block mb-3">Nombre del residente</label>
         <input
           type="text"
           value={residenteName}
           onChange={(e) => setResidenteName(e.target.value)}
           placeholder="Juan Pérez"
-          className="w-full border-b border-border py-3 text-sm text-foreground bg-transparent focus:border-accent focus:outline-none"
+          className="input-editorial"
           data-testid="residente-name-input"
         />
       </div>
 
       <div>
-        <label className="section-label mb-2 block">WhatsApp del residente</label>
+        <label className="section-label block mb-3">WhatsApp del residente</label>
         <input
           type="tel"
           value={residentePhone}
           onChange={(e) => setResidentePhone(e.target.value)}
           placeholder="+521234567890"
-          className="w-full border-b border-border py-3 text-sm text-foreground bg-transparent focus:border-accent focus:outline-none"
+          className="input-editorial"
           data-testid="residente-phone-input"
         />
-        <p className="text-xs text-muted mt-1">Con código de país. Ejemplo: +521234567890</p>
+        <p className="text-xs text-muted/60 mt-2">Formato: código de país + número, sin espacios</p>
       </div>
 
       {error && (
@@ -96,7 +102,7 @@ export default function ProjectSetup({ userEmail }: Props) {
       <button
         type="submit"
         disabled={!canSubmit || loading}
-        className="w-full btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full btn-primary disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none"
         data-testid="create-project-submit"
       >
         {loading ? "Creando..." : "Crear proyecto"}

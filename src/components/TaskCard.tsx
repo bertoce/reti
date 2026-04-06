@@ -29,7 +29,7 @@ export default function TaskCard({ task, onSelect, onToggleComplete }: Props) {
   return (
     <button
       onClick={() => onSelect(task)}
-      className="w-full text-left bg-card rounded-lg border border-border p-4 active:bg-[#F0F0EE] transition-colors"
+      className="w-full text-left card-interactive"
       data-testid="task-card"
     >
       <div className="flex items-start gap-3">
@@ -37,7 +37,7 @@ export default function TaskCard({ task, onSelect, onToggleComplete }: Props) {
         {onToggleComplete && (
           <div
             onClick={handleToggle}
-            className={`shrink-0 mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
+            className={`shrink-0 mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-all duration-200 ${
               isCompleted
                 ? "bg-success border-success text-white"
                 : "border-border hover:border-accent"
@@ -56,40 +56,40 @@ export default function TaskCard({ task, onSelect, onToggleComplete }: Props) {
 
         {/* Thumbnail */}
         {hasPhoto && (
-          <div className="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-[#F0F0EE]">
+          <div className="shrink-0 w-14 h-14 rounded overflow-hidden bg-subtle">
             <img
               src={task.photos![0]}
               alt=""
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover photo-warm"
             />
           </div>
         )}
 
         <div className="flex-1 min-w-0">
-          {/* Title row */}
+          {/* Title */}
           <div className="flex items-center gap-2">
             {priorityIcon && <span className="text-sm">{priorityIcon}</span>}
-            <h3 className={`text-sm font-medium truncate ${isCompleted ? "text-muted line-through" : "text-foreground"}`}>
+            <h3 className={`text-sm font-medium tracking-tight truncate ${isCompleted ? "text-muted line-through" : "text-foreground"}`}>
               {task.title}
             </h3>
           </div>
 
-          {/* Meta row */}
-          <div className="flex items-center gap-2 mt-1.5">
+          {/* Meta */}
+          <div className="flex items-center gap-2 mt-2">
             <span
-              className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${getCategoryColor(task.category)}`}
+              className={`chip ${getCategoryColor(task.category)}`}
               data-testid="category-badge"
             >
               {getCategoryLabel(task.category)}
             </span>
 
             {isExpense && (
-              <span className="text-sm font-semibold text-foreground" data-testid="expense-amount">
+              <span className="text-sm font-semibold text-foreground tabular-nums" data-testid="expense-amount">
                 {formatCurrency(task.expense_amount!)}
               </span>
             )}
 
-            <span className="text-xs text-muted ml-auto">
+            <span className="text-xs text-muted/60 ml-auto">
               {formatRelativeTime(task.created_at)}
             </span>
           </div>

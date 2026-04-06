@@ -81,7 +81,7 @@ export default function OverviewPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen" data-testid="loading">
+      <div className="flex items-center justify-center min-h-screen bg-background" data-testid="loading">
         <div className="text-sm text-muted">Cargando...</div>
       </div>
     );
@@ -90,35 +90,37 @@ export default function OverviewPage() {
   return (
     <div className="min-h-screen bg-background" data-testid="overview-page">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-card border-b border-border bg-stars-faint">
-        <div className="px-4 py-3">
-          <p className="section-label">Vista del desarrollador</p>
-          <h1 className="text-base font-semibold text-foreground" data-testid="project-name">
+      <header className="sticky top-0 z-40 bg-card border-b border-border">
+        <div className="px-6 py-4">
+          <p className="section-label mb-1">Desarrollador</p>
+          <h1 className="text-base font-semibold text-foreground tracking-tight" data-testid="project-name">
             {project?.name || "Proyecto"}
           </h1>
         </div>
 
-        {/* Tab bar */}
-        <div className="flex border-t border-border" data-testid="tab-bar">
+        {/* Tabs */}
+        <div className="flex px-6" data-testid="tab-bar">
           {tabs.map((t) => (
             <button
               key={t.value}
               onClick={() => setTab(t.value)}
-              className={`flex-1 py-2.5 text-xs font-medium text-center transition-colors relative ${
-                tab === t.value ? "text-foreground" : "text-muted"
+              className={`py-3 mr-6 text-sm font-medium transition-colors relative ${
+                tab === t.value
+                  ? "text-foreground"
+                  : "text-muted hover:text-foreground"
               }`}
             >
               {t.label}
               {tab === t.value && (
-                <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-accent rounded-full" />
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-accent" />
               )}
             </button>
           ))}
         </div>
       </header>
 
-      {/* Tab content */}
-      <div className="px-4 pt-4">
+      {/* Content */}
+      <div className="px-6 pt-6">
         {tab === "overview" && summary && (
           <SummaryCards
             summary={{ ...summary, last_activity: lastActivity }}

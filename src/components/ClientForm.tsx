@@ -19,15 +19,15 @@ export default function ClientForm({ onSubmit, onClose }: Props) {
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4 space-y-3" data-testid="client-form">
-      <h3 className="text-sm font-semibold text-foreground">Agregar cliente</h3>
-      <form onSubmit={handleSubmit} className="space-y-3">
+    <div className="card space-y-6" data-testid="client-form">
+      <h3 className="text-base font-semibold text-foreground tracking-tight">Agregar cliente</h3>
+      <form onSubmit={handleSubmit} className="space-y-5">
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nombre del cliente"
-          className="w-full border-b border-border py-2 text-sm bg-transparent focus:border-accent focus:outline-none"
+          className="input-editorial"
           data-testid="client-name-input"
         />
         <input
@@ -35,7 +35,7 @@ export default function ClientForm({ onSubmit, onClose }: Props) {
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           placeholder="Teléfono (con código de país)"
-          className="w-full border-b border-border py-2 text-sm bg-transparent focus:border-accent focus:outline-none"
+          className="input-editorial"
           data-testid="client-phone-input"
         />
         <input
@@ -43,14 +43,14 @@ export default function ClientForm({ onSubmit, onClose }: Props) {
           value={unit}
           onChange={(e) => setUnit(e.target.value)}
           placeholder="Unidad / Propiedad (opcional)"
-          className="w-full border-b border-border py-2 text-sm bg-transparent focus:border-accent focus:outline-none"
+          className="input-editorial"
           data-testid="client-unit-input"
         />
-        <div className="flex gap-2">
+        <div className="flex gap-3 pt-2">
           <button
             type="submit"
             disabled={!name.trim() || !phone.trim()}
-            className="btn-primary text-sm py-2 px-4 disabled:opacity-40"
+            className="btn-primary text-sm disabled:opacity-40 disabled:hover:transform-none"
             data-testid="submit-client"
           >
             Agregar

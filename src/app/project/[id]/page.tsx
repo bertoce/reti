@@ -60,7 +60,6 @@ export default function ProjectPage() {
 
   const handleToggleComplete = async (task: SiteTask) => {
     const newStatus = task.status === "completed" ? "pending" : "completed";
-    // Optimistic update
     setTasks((prev) =>
       prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t))
     );
@@ -71,7 +70,6 @@ export default function ProjectPage() {
         body: JSON.stringify({ status: newStatus }),
       });
     } catch {
-      // Revert on failure
       setTasks((prev) =>
         prev.map((t) => (t.id === task.id ? { ...t, status: task.status } : t))
       );
@@ -124,7 +122,7 @@ export default function ProjectPage() {
       await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
     } catch (err) {
       console.error("Failed to delete task:", err);
-      await fetchData(); // Revert
+      await fetchData();
     }
   };
 
@@ -142,7 +140,7 @@ export default function ProjectPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen" data-testid="loading">
+      <div className="flex items-center justify-center min-h-screen bg-background" data-testid="loading">
         <div className="text-sm text-muted">Cargando...</div>
       </div>
     );
@@ -151,38 +149,39 @@ export default function ProjectPage() {
   return (
     <div className="min-h-screen bg-background" data-testid="project-page">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-card border-b border-border bg-stars-faint">
-        <div className="px-4 py-3">
-          <h1 className="text-base font-semibold text-foreground" data-testid="project-name">
+      <header className="sticky top-0 z-40 bg-card border-b border-border">
+        <div className="px-6 py-4">
+          <p className="section-label mb-1">Residente</p>
+          <h1 className="text-base font-semibold text-foreground tracking-tight" data-testid="project-name">
             {projectName || "Proyecto"}
           </h1>
         </div>
 
-        {/* Tab bar */}
-        <div className="flex border-t border-border" data-testid="tab-bar">
+        {/* Tabs */}
+        <div className="flex px-6" data-testid="tab-bar">
           {tabConfig.map((t) => (
             <button
               key={t.value}
               onClick={() => setTab(t.value)}
-              className={`flex-1 py-2.5 text-xs font-medium text-center transition-colors relative ${
+              className={`py-3 mr-6 text-sm font-medium transition-colors relative ${
                 tab === t.value
                   ? "text-foreground"
-                  : "text-muted"
+                  : "text-muted hover:text-foreground"
               }`}
             >
               {t.label}
               {t.count !== undefined && (
-                <span className="ml-1 opacity-50">{t.count}</span>
+                <span className="ml-1.5 text-muted/50 tabular-nums">{t.count}</span>
               )}
               {tab === t.value && (
-                <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-accent rounded-full" />
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-accent" />
               )}
             </button>
           ))}
         </div>
       </header>
 
-      {/* Tab content */}
+      {/* Content */}
       {tab === "tasks" && (
         <TaskList
           tasks={tasks}
@@ -195,19 +194,20 @@ export default function ProjectPage() {
       )}
       {tab === "photos" && <PhotoGrid photos={photos} />}
 
-      {/* FAB for creating tasks */}
+      {/* FAB */}
       {tab === "tasks" && !selectedTask && !showCreateForm && (
         <button
           onClick={() => setShowCreateForm(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center text-2xl z-30 hover:brightness-110 active:scale-95 transition-all"
+          className="fixed bottom-8 right-6 w-12 h-12 rounded-full bg-accent text-white flex items-center justify-center z-30 transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0"
           data-testid="fab-create-task"
           aria-label="Nueva tarea"
         >
-          +
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
         </button>
       )}
 
-      {/* Task creation form */}
       {showCreateForm && (
         <TaskCreationForm
           onSubmit={handleCreateTask}
@@ -215,7 +215,6 @@ export default function ProjectPage() {
         />
       )}
 
-      {/* Task detail overlay */}
       {selectedTask && (
         <TaskDetail
           task={selectedTask}

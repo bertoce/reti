@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { TaskCategory, TaskPriority } from "@/lib/supabase";
+import { getCategoryLabel } from "@/lib/format";
 
 type Props = {
   onSubmit: (task: {
@@ -12,14 +13,7 @@ type Props = {
   onClose: () => void;
 };
 
-const categories: { value: TaskCategory; label: string }[] = [
-  { value: "progress", label: "Avance" },
-  { value: "issue", label: "Problema" },
-  { value: "material", label: "Material" },
-  { value: "inspection", label: "Inspección" },
-  { value: "expense", label: "Gasto" },
-  { value: "general", label: "General" },
-];
+const categories: TaskCategory[] = ["progress", "issue", "material", "inspection", "expense", "general"];
 
 const priorities: { value: TaskPriority; label: string }[] = [
   { value: "low", label: "Baja" },
@@ -40,66 +34,57 @@ export default function TaskCreationForm({ onSubmit, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-end" data-testid="task-creation-form">
-      <div className="w-full bg-card border-t border-border rounded-t-lg p-4 space-y-4">
+    <div className="fixed inset-0 z-50 bg-foreground/40 flex items-end" data-testid="task-creation-form">
+      <div className="w-full bg-card border-t border-border rounded-t-lg p-6 space-y-6 animate-[slideUp_0.2s_ease-out]">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-foreground">Nueva tarea</h2>
+          <h2 className="text-base font-semibold text-foreground tracking-tight">Nueva tarea</h2>
           <button
             onClick={onClose}
-            className="text-muted hover:text-foreground text-sm"
+            className="btn-ghost text-sm"
             data-testid="close-creation-form"
           >
             Cancelar
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {/* Title */}
+        <form onSubmit={handleSubmit} className="space-y-6">
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Título de la tarea"
-            className="w-full border-b border-border py-2 text-sm text-foreground bg-transparent focus:border-accent focus:outline-none transition-colors"
+            className="input-editorial text-base"
             autoFocus
             data-testid="task-title-input"
           />
 
-          {/* Category chips */}
+          {/* Category */}
           <div>
-            <p className="section-label mb-2">Categoría</p>
+            <p className="section-label mb-3">Categoría</p>
             <div className="flex flex-wrap gap-2" data-testid="category-select">
               {categories.map((cat) => (
                 <button
-                  key={cat.value}
+                  key={cat}
                   type="button"
-                  onClick={() => setCategory(cat.value)}
-                  className={`px-3 py-1 text-xs font-medium rounded border transition-colors ${
-                    category === cat.value
-                      ? "bg-accent text-white border-accent"
-                      : "bg-card text-muted border-border hover:border-accent"
-                  }`}
+                  onClick={() => setCategory(cat)}
+                  className={category === cat ? "chip-select-active" : "chip-select"}
                 >
-                  {cat.label}
+                  {getCategoryLabel(cat)}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Priority chips */}
+          {/* Priority */}
           <div>
-            <p className="section-label mb-2">Prioridad</p>
+            <p className="section-label mb-3">Prioridad</p>
             <div className="flex flex-wrap gap-2" data-testid="priority-select">
               {priorities.map((pri) => (
                 <button
                   key={pri.value}
                   type="button"
                   onClick={() => setPriority(pri.value)}
-                  className={`px-3 py-1 text-xs font-medium rounded border transition-colors ${
-                    priority === pri.value
-                      ? "bg-accent text-white border-accent"
-                      : "bg-card text-muted border-border hover:border-accent"
-                  }`}
+                  className={priority === pri.value ? "chip-select-active" : "chip-select"}
                 >
                   {pri.label}
                 </button>
@@ -107,11 +92,10 @@ export default function TaskCreationForm({ onSubmit, onClose }: Props) {
             </div>
           </div>
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={!title.trim()}
-            className="w-full btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full btn-primary disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none"
             data-testid="submit-task"
           >
             Crear tarea

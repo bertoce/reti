@@ -65,12 +65,12 @@ export default function AgentChat({ projectId, task }: Props) {
   };
 
   return (
-    <div className="border-t border-border mt-4 pt-4" data-testid="agent-chat">
-      <p className="section-label mb-3">Chat con el agente</p>
+    <div className="border-t border-border mt-6 pt-6" data-testid="agent-chat">
+      <p className="section-label mb-4">Chat con el agente</p>
 
-      {/* Chat messages */}
+      {/* Messages */}
       {messages.length > 0 && (
-        <div className="space-y-2 mb-3 max-h-48 overflow-y-auto" data-testid="chat-messages">
+        <div className="space-y-3 mb-4 max-h-56 overflow-y-auto" data-testid="chat-messages">
           {messages.map((msg, i) => (
             <div
               key={i}
@@ -78,10 +78,10 @@ export default function AgentChat({ projectId, task }: Props) {
               data-testid={`chat-${msg.role}`}
             >
               <div
-                className={`max-w-[80%] px-3 py-2 rounded-lg text-sm ${
+                className={`max-w-[80%] px-4 py-2.5 rounded text-sm leading-relaxed ${
                   msg.role === "user"
                     ? "bg-accent text-white"
-                    : "bg-[#F0F0EE] text-foreground"
+                    : "bg-subtle text-foreground"
                 }`}
               >
                 {msg.content}
@@ -90,8 +90,8 @@ export default function AgentChat({ projectId, task }: Props) {
           ))}
           {loading && (
             <div className="flex justify-start" data-testid="chat-loading">
-              <div className="bg-[#F0F0EE] px-3 py-2 rounded-lg text-sm text-muted">
-                Pensando...
+              <div className="bg-subtle px-4 py-2.5 rounded text-sm text-muted">
+                <span className="animate-pulse">Pensando...</span>
               </div>
             </div>
           )}
@@ -99,21 +99,21 @@ export default function AgentChat({ projectId, task }: Props) {
       )}
 
       {/* Input */}
-      <div className="flex gap-2">
+      <div className="flex gap-3">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           placeholder="Escribe al agente..."
-          className="flex-1 border border-border rounded px-3 py-2 text-sm text-foreground bg-transparent focus:border-accent focus:outline-none"
+          className="flex-1 input-editorial"
           disabled={loading}
           data-testid="chat-input"
         />
         <button
           onClick={sendMessage}
           disabled={!input.trim() || loading}
-          className="btn-primary px-4 py-2 text-sm disabled:opacity-40"
+          className="btn-primary px-5 py-2.5 text-sm disabled:opacity-40 disabled:hover:transform-none"
           data-testid="chat-send"
         >
           Enviar

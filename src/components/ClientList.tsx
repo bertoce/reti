@@ -22,7 +22,7 @@ export default function ClientList({ clients, selectedIds, onToggleSelect }: Pro
       {clients.map((client) => (
         <label
           key={client.id}
-          className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg cursor-pointer"
+          className="flex items-center gap-3 p-3 card-interactive cursor-pointer"
           data-testid="client-item"
         >
           <input

@@ -116,10 +116,10 @@ export default function ClientUpdatesTab({ projectId }: Props) {
   ];
 
   return (
-    <div className="px-4 pt-4 space-y-6" data-testid="client-updates-tab">
+    <div className="px-6 pt-6 space-y-8" data-testid="client-updates-tab">
       {/* Client list section */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-4">
           <p className="section-label">Clientes</p>
           <div className="flex gap-2">
             {clients.length > 0 && (
@@ -153,14 +153,14 @@ export default function ClientUpdatesTab({ projectId }: Props) {
 
       {/* Template buttons */}
       <div>
-        <p className="section-label mb-3">Enviar actualización</p>
+        <p className="section-label mb-4">Enviar actualización</p>
         <div className="space-y-2">
           {templates.map((tpl) => (
             <button
               key={tpl.type}
               onClick={() => generateDraft(tpl.type)}
               disabled={generating || selectedClientIds.length === 0}
-              className="w-full text-left p-3 bg-card border border-border rounded-lg hover:border-accent transition-colors disabled:opacity-40"
+              className="w-full text-left card-interactive disabled:opacity-40 disabled:hover:transform-none disabled:hover:border-border"
               data-testid={`template-${tpl.type}`}
             >
               <p className="text-sm font-medium text-foreground">{tpl.label}</p>
@@ -178,7 +178,7 @@ export default function ClientUpdatesTab({ projectId }: Props) {
 
       {/* Result feedback */}
       {lastResult && (
-        <div className="p-3 bg-success-light rounded-lg" data-testid="send-result">
+        <div className="card bg-success-light border-0" data-testid="send-result">
           <p className="text-sm text-success font-medium">
             Enviado a {lastResult.sent} cliente{lastResult.sent !== 1 ? "s" : ""}
             {lastResult.failed > 0 && ` · ${lastResult.failed} fallido${lastResult.failed !== 1 ? "s" : ""}`}

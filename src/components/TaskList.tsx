@@ -20,7 +20,6 @@ export default function TaskList({ tasks, onSelectTask, onToggleComplete }: Prop
     ? tasks
     : tasks.filter((t) => t.status === filter);
 
-  // Group by status for the "all" view
   const grouped = filter === "all"
     ? groupByStatus(tasks)
     : { [filter]: filteredTasks };
@@ -36,20 +35,16 @@ export default function TaskList({ tasks, onSelectTask, onToggleComplete }: Prop
   return (
     <div data-testid="task-list">
       {/* Filter chips */}
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto" data-testid="status-filters">
+      <div className="flex gap-2 px-6 py-4 overflow-x-auto" data-testid="status-filters">
         {filterOptions.map((opt) => (
           <button
             key={opt.value}
             onClick={() => setFilter(opt.value)}
-            className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
-              filter === opt.value
-                ? "bg-foreground text-background"
-                : "bg-[#F0F0EE] text-muted hover:bg-border"
-            }`}
+            className={filter === opt.value ? "chip-select-active" : "chip-select"}
           >
             {opt.label}
             {opt.value !== "all" && (
-              <span className="ml-1 opacity-60">
+              <span className="ml-1.5 opacity-60">
                 {tasks.filter((t) => t.status === opt.value).length}
               </span>
             )}
@@ -58,11 +53,13 @@ export default function TaskList({ tasks, onSelectTask, onToggleComplete }: Prop
       </div>
 
       {/* Task groups */}
-      <div className="px-4 pb-4 space-y-4">
+      <div className="px-6 pb-6 space-y-6">
         {filteredTasks.length === 0 ? (
-          <p className="text-center text-sm text-muted py-8" data-testid="empty-state">
-            No hay tareas {filter !== "all" ? `con estado "${getStatusLabel(filter)}"` : ""}
-          </p>
+          <div className="text-center py-16" data-testid="empty-state">
+            <p className="text-sm text-muted">
+              No hay tareas {filter !== "all" ? `con estado "${getStatusLabel(filter)}"` : ""}
+            </p>
+          </div>
         ) : (
           statusOrder.map((status) => {
             const group = grouped[status];
@@ -71,11 +68,11 @@ export default function TaskList({ tasks, onSelectTask, onToggleComplete }: Prop
             return (
               <div key={status}>
                 {filter === "all" && (
-                  <h2 className="text-xs font-semibold text-muted uppercase tracking-wide mb-2" data-testid="status-group-header">
+                  <h2 className="section-label mb-3" data-testid="status-group-header">
                     {getStatusLabel(status)} ({group.length})
                   </h2>
                 )}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {group.map((task) => (
                     <TaskCard key={task.id} task={task} onSelect={onSelectTask} onToggleComplete={onToggleComplete} />
                   ))}

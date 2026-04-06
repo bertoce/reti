@@ -15,7 +15,6 @@ export default function LoginForm() {
   useEffect(() => {
     const hash = window.location.hash;
     if (hash && hash.includes("access_token")) {
-      // Parse token from hash fragment
       const params = new URLSearchParams(hash.substring(1));
       const accessToken = params.get("access_token");
       const refreshToken = params.get("refresh_token");
@@ -27,7 +26,6 @@ export default function LoginForm() {
           refresh_token: refreshToken,
         }).then(({ error }) => {
           if (!error) {
-            // Clear the hash and redirect
             window.location.replace("/dashboard");
           } else {
             console.error("[login] Failed to set session:", error);
@@ -67,19 +65,25 @@ export default function LoginForm() {
 
   if (sent) {
     return (
-      <div className="text-center space-y-3" data-testid="login-success">
-        <p className="text-base font-medium text-foreground">Revisa tu correo</p>
-        <p className="text-sm text-muted">
-          Enviamos un enlace de acceso a <strong>{email}</strong>
+      <div className="card text-center py-12" data-testid="login-success">
+        <div className="w-10 h-10 rounded-full bg-success-light flex items-center justify-center mx-auto mb-4">
+          <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <p className="text-base font-semibold text-foreground">Revisa tu correo</p>
+        <p className="text-sm text-muted mt-2 leading-relaxed">
+          Enviamos un enlace de acceso a<br />
+          <span className="font-medium text-foreground">{email}</span>
         </p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" data-testid="login-form">
+    <form onSubmit={handleSubmit} className="space-y-8" data-testid="login-form">
       <div>
-        <label htmlFor="email" className="section-label mb-2 block">
+        <label htmlFor="email" className="section-label block mb-3">
           Correo electrónico
         </label>
         <input
@@ -88,7 +92,7 @@ export default function LoginForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="tu@correo.com"
-          className="w-full border-b border-border py-3 text-sm text-foreground bg-transparent focus:border-accent focus:outline-none transition-colors"
+          className="input-editorial"
           autoFocus
           data-testid="email-input"
         />
@@ -101,7 +105,7 @@ export default function LoginForm() {
       <button
         type="submit"
         disabled={!email.trim() || loading}
-        className="w-full btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full btn-primary disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none"
         data-testid="login-submit"
       >
         {loading ? "Enviando..." : "Enviar enlace de acceso"}

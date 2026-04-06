@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
-/* ─── lowkey design system ──────────────────────────────
+/* ─── lowkey design system for reti ─────────────────────
    "The home is the hero, not the interface."
    Quiet confidence. Typography does the heavy lifting.
+   Generous space. Motion with purpose.
    ─────────────────────────────────────────────────────── */
 
 :root {
@@ -20,6 +21,7 @@
   --border: #E8E8E6;
   --card: #ffffff;
   --martin-blue: #4A7A90;
+  --subtle: #F0F0EE;
 }
 
 @theme inline {
@@ -37,6 +39,7 @@
   --color-border: var(--border);
   --color-card: var(--card);
   --color-martin-blue: var(--martin-blue);
+  --color-subtle: var(--subtle);
   --font-sans: var(--font-inter), "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -47,8 +50,7 @@ body {
 }
 
 /* ─── Agnes Martin "Stars" grid ─────────────────────────
-   Fine pencil grid (1px) with dots at intersections.
-   32px × 32px grid size.
+   Fine pencil grid with dots at intersections. 32px cells.
    ─────────────────────────────────────────────────────── */
 .bg-stars {
   background-image:
@@ -66,7 +68,7 @@ body {
   background-size: 32px 32px;
 }
 
-/* ─── Section label ────────────────────────────────────── */
+/* ─── Typography ───────────────────────────────────────── */
 .section-label {
   font-size: 0.6875rem;
   line-height: 1.4;
@@ -76,8 +78,31 @@ body {
   color: var(--muted);
 }
 
+.text-display {
+  font-size: 2.75rem;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+.text-title {
+  font-size: 2rem;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.text-heading {
+  font-size: 1.5rem;
+  line-height: 1.25;
+  font-weight: 600;
+}
+
 /* ─── Buttons ──────────────────────────────────────────── */
 .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background-color: var(--martin-blue);
   color: white;
   padding: 0.75rem 1.5rem;
@@ -97,7 +122,10 @@ body {
 }
 
 .btn-secondary {
-  border: 1px solid var(--foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
   color: var(--foreground);
   padding: 0.75rem 1.5rem;
   font-size: 0.875rem;
@@ -107,11 +135,18 @@ body {
 }
 
 .btn-secondary:hover {
-  background-color: var(--foreground);
-  color: var(--background);
+  border-color: var(--foreground);
+  transform: translateY(-1px);
+}
+
+.btn-secondary:active {
+  transform: translateY(0);
 }
 
 .btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--muted);
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
@@ -122,4 +157,118 @@ body {
 
 .btn-ghost:hover {
   color: var(--foreground);
+}
+
+/* ─── Form inputs ──────────────────────────────────────── */
+.input-editorial {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  padding: 0.875rem 0;
+  font-size: 0.9375rem;
+  color: var(--foreground);
+  transition: border-color 200ms;
+}
+
+.input-editorial::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.input-editorial:focus {
+  outline: none;
+  border-bottom-color: var(--martin-blue);
+}
+
+/* ─── Cards ────────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.5rem;
+  transition: border-color 200ms;
+}
+
+.card-interactive {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.5rem;
+  transition: all 200ms;
+}
+
+.card-interactive:hover {
+  border-color: var(--martin-blue);
+  transform: translateY(-1px);
+}
+
+.card-interactive:active {
+  transform: translateY(0);
+}
+
+/* ─── Chips / badges ───────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  border-radius: 3px;
+  letter-spacing: 0.02em;
+}
+
+.chip-select {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted);
+  transition: all 200ms;
+  cursor: pointer;
+}
+
+.chip-select:hover {
+  border-color: var(--martin-blue);
+  color: var(--foreground);
+}
+
+.chip-select-active {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--martin-blue);
+  color: white;
+  border: 1px solid var(--martin-blue);
+  border-radius: 3px;
+}
+
+/* ─── Animated underline link ──────────────────────────── */
+.link-reveal {
+  position: relative;
+}
+
+.link-reveal::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--foreground);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.link-reveal:hover::after {
+  width: 100%;
+}
+
+/* ─── Photo warm filter ────────────────────────────────── */
+.photo-warm {
+  filter: saturate(0.95) brightness(1.02) sepia(0.03);
 }

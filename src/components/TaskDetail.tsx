@@ -53,108 +53,103 @@ export default function TaskDetail({ task, projectId, onClose, onUpdate, onDelet
   return (
     <div className="fixed inset-0 z-50 bg-background" data-testid="task-detail">
       {/* Header */}
-      <div className="sticky top-0 bg-card border-b border-border px-4 py-3 flex items-center gap-3">
+      <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center gap-3">
         <button
           onClick={onClose}
-          className="p-1 -ml-1 text-muted hover:text-foreground"
+          className="p-1 -ml-1 text-muted hover:text-foreground transition-colors"
           aria-label="Cerrar"
           data-testid="close-detail"
         >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <span
-          className={`px-2.5 py-1 text-xs font-medium rounded ${getCategoryColor(task.category)}`}
-        >
+        <span className={`chip ${getCategoryColor(task.category)}`}>
           {getCategoryLabel(task.category)}
         </span>
         <span className="text-xs text-muted ml-auto">
           {getStatusLabel(task.status)}
         </span>
 
-        {/* Edit toggle */}
         {onUpdate && !editing && (
           <button
             onClick={() => setEditing(true)}
-            className="p-1 text-muted hover:text-accent"
+            className="p-1.5 text-muted hover:text-accent transition-colors"
             data-testid="edit-toggle"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
             </svg>
           </button>
         )}
 
-        {/* Delete button */}
         {onDelete && (
           <button
             onClick={() => onDelete(task.id)}
-            className="p-1 text-muted hover:text-danger"
+            className="p-1.5 text-muted hover:text-danger transition-colors"
             data-testid="delete-task"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
           </button>
         )}
       </div>
 
       {/* Content */}
-      <div className="p-4 space-y-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 56px)" }}>
+      <div className="px-6 py-6 space-y-6 overflow-y-auto" style={{ maxHeight: "calc(100vh - 60px)" }}>
         {editing ? (
-          /* Edit mode */
-          <div className="space-y-3" data-testid="edit-mode">
+          <div className="space-y-6" data-testid="edit-mode">
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full text-lg font-semibold text-foreground border-b border-border py-1 bg-transparent focus:border-accent focus:outline-none"
+              className="w-full text-lg font-semibold text-foreground tracking-tight input-editorial"
               data-testid="edit-title"
             />
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Descripción (opcional)"
-              className="w-full text-sm text-foreground border border-border rounded p-2 bg-transparent focus:border-accent focus:outline-none resize-none"
+              className="w-full text-sm text-foreground border border-border rounded p-4 bg-transparent focus:border-accent focus:outline-none resize-none transition-colors"
               rows={3}
               data-testid="edit-description"
             />
 
-            {/* Category select */}
-            <div className="flex flex-wrap gap-2">
-              {(["progress", "issue", "material", "inspection", "expense", "general"] as TaskCategory[]).map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setCategory(cat)}
-                  className={`px-2 py-1 text-xs rounded border ${
-                    category === cat ? "bg-accent text-white border-accent" : "border-border text-muted"
-                  }`}
-                >
-                  {getCategoryLabel(cat)}
-                </button>
-              ))}
+            <div>
+              <p className="section-label mb-3">Categoría</p>
+              <div className="flex flex-wrap gap-2">
+                {(["progress", "issue", "material", "inspection", "expense", "general"] as TaskCategory[]).map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setCategory(cat)}
+                    className={category === cat ? "chip-select-active" : "chip-select"}
+                  >
+                    {getCategoryLabel(cat)}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Priority select */}
-            <div className="flex flex-wrap gap-2">
-              {(["low", "normal", "high", "urgent"] as TaskPriority[]).map((pri) => (
-                <button
-                  key={pri}
-                  type="button"
-                  onClick={() => setPriority(pri)}
-                  className={`px-2 py-1 text-xs rounded border ${
-                    priority === pri ? "bg-accent text-white border-accent" : "border-border text-muted"
-                  }`}
-                >
-                  {pri}
-                </button>
-              ))}
+            <div>
+              <p className="section-label mb-3">Prioridad</p>
+              <div className="flex flex-wrap gap-2">
+                {(["low", "normal", "high", "urgent"] as TaskPriority[]).map((pri) => (
+                  <button
+                    key={pri}
+                    type="button"
+                    onClick={() => setPriority(pri)}
+                    className={priority === pri ? "chip-select-active" : "chip-select"}
+                  >
+                    {pri}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="flex gap-2">
-              <button onClick={handleSave} className="btn-primary text-sm py-2 px-4" data-testid="save-edit">
+            <div className="flex gap-3">
+              <button onClick={handleSave} className="btn-primary text-sm" data-testid="save-edit">
                 Guardar
               </button>
               <button onClick={handleCancel} className="btn-ghost text-sm" data-testid="cancel-edit">
@@ -163,45 +158,44 @@ export default function TaskDetail({ task, projectId, onClose, onUpdate, onDelet
             </div>
           </div>
         ) : (
-          /* View mode */
           <>
             <div>
-              <h1 className="text-lg font-semibold text-foreground">
-                {priorityIcon && <span className="mr-1">{priorityIcon}</span>}
+              <h1 className="text-lg font-semibold text-foreground tracking-tight">
+                {priorityIcon && <span className="mr-1.5">{priorityIcon}</span>}
                 {task.title}
               </h1>
-              <p className="text-xs text-muted mt-1">
+              <p className="text-xs text-muted mt-2">
                 {formatDate(task.created_at)} a las {formatTime(task.created_at)}
               </p>
             </div>
 
             {task.description && (
-              <p className="text-sm text-foreground/80">{task.description}</p>
+              <p className="text-sm text-foreground/80 leading-relaxed">{task.description}</p>
             )}
           </>
         )}
 
         {/* Expense details */}
         {isExpense && task.expense_amount && (
-          <div className="bg-success-light rounded-lg p-4 space-y-3" data-testid="expense-detail">
+          <div className="card bg-success-light border-0" data-testid="expense-detail">
             <div className="flex items-baseline justify-between">
-              <span className="text-sm text-muted">Total</span>
-              <span className="text-xl font-bold text-foreground">
+              <span className="section-label">Total</span>
+              <span className="text-xl font-bold text-foreground tabular-nums">
                 {formatCurrency(task.expense_amount)}
               </span>
             </div>
 
             {task.expense_vendor && (
-              <div className="flex items-baseline justify-between">
-                <span className="text-sm text-muted">Proveedor</span>
+              <div className="flex items-baseline justify-between mt-3">
+                <span className="section-label">Proveedor</span>
                 <span className="text-sm font-medium">{task.expense_vendor}</span>
               </div>
             )}
 
             {task.expense_items && task.expense_items.length > 0 && (
-              <div className="border-t border-border pt-3">
-                <p className="text-xs text-muted mb-2 font-medium">Desglose</p>
-                <div className="space-y-1.5">
+              <div className="border-t border-border mt-4 pt-4">
+                <p className="section-label mb-3">Desglose</p>
+                <div className="space-y-2">
                   {task.expense_items.map((item, i) => (
                     <div key={i} className="flex items-center justify-between text-sm" data-testid="expense-line-item">
                       <span>
@@ -210,7 +204,7 @@ export default function TaskDetail({ task, projectId, onClose, onUpdate, onDelet
                           x{item.quantity} @ {formatCurrency(item.unit_price)}
                         </span>
                       </span>
-                      <span className="font-medium">{formatCurrency(item.subtotal)}</span>
+                      <span className="font-medium tabular-nums">{formatCurrency(item.subtotal)}</span>
                     </div>
                   ))}
                 </div>
@@ -222,23 +216,23 @@ export default function TaskDetail({ task, projectId, onClose, onUpdate, onDelet
         {/* Photos */}
         {task.photos && task.photos.length > 0 && (
           <div data-testid="task-photos">
-            <p className="text-xs text-muted mb-2 font-medium">Fotos</p>
-            <div className="grid grid-cols-2 gap-2">
+            <p className="section-label mb-3">Fotos</p>
+            <div className="grid grid-cols-2 gap-3">
               {task.photos.map((url, i) => (
-                <div key={i} className="aspect-square rounded-lg overflow-hidden bg-[#F0F0EE]">
-                  <img src={url} alt="" className="w-full h-full object-cover" />
+                <div key={i} className="aspect-square rounded overflow-hidden bg-subtle">
+                  <img src={url} alt="" className="w-full h-full object-cover photo-warm" />
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Receipt photo */}
+        {/* Receipt */}
         {task.receipt_url && (
           <div data-testid="receipt-photo">
-            <p className="text-xs text-muted mb-2 font-medium">Recibo</p>
-            <div className="rounded-lg overflow-hidden bg-[#F0F0EE]">
-              <img src={task.receipt_url} alt="Recibo" className="w-full" />
+            <p className="section-label mb-3">Recibo</p>
+            <div className="rounded overflow-hidden bg-subtle">
+              <img src={task.receipt_url} alt="Recibo" className="w-full photo-warm" />
             </div>
           </div>
         )}
