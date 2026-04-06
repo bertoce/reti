@@ -7,20 +7,10 @@ import { createServiceClient } from "@/lib/supabase";
 import { parseWebhookPayload, verifyWebhookSignature } from "@/lib/wasender";
 import { processMessage } from "@/lib/agent";
 import { processMedia } from "@/lib/media";
-import { sendWhatsAppMessage } from "@/lib/wasender";
-import Anthropic from "@anthropic-ai/sdk";
 
 export async function POST(request: Request) {
   try {
     const rawBody = await request.text();
-
-    // DEBUG: Log the raw payload so we can see what WASenderApi sends
-    console.log("[webhook] Raw payload:", rawBody.substring(0, 2000));
-    console.log("[webhook] Headers:", JSON.stringify({
-      "x-wasender-signature": request.headers.get("x-wasender-signature"),
-      "x-webhook-signature": request.headers.get("x-webhook-signature"),
-      "content-type": request.headers.get("content-type"),
-    }));
 
     // Verify webhook signature
     const signature = request.headers.get("x-wasender-signature") ||
@@ -35,12 +25,8 @@ export async function POST(request: Request) {
     // Parse the incoming message
     const incoming = parseWebhookPayload(body);
     if (!incoming) {
-      // Not a user message (could be a status update, etc.) — ignore
-      console.log("[webhook] parseWebhookPayload returned null. Body keys:", Object.keys(body));
       return NextResponse.json({ ok: true });
     }
-
-    console.log("[webhook] Parsed message:", JSON.stringify(incoming));
 
     const supabase = createServiceClient();
 

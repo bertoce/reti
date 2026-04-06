@@ -1,92 +1,80 @@
 # reti
 
-A B2B platform for residential construction sites in Mexico/LATAM. A residente de obra (site supervisor) messages an AI agent via WhatsApp with tasks, photos, expenses, and progress reports. The agent processes everything and organizes it into a clean web platform. Both the residente and the developer can view the organized data.
+Construction site tracking powered by AI. A residente de obra messages a Claude agent via WhatsApp — tasks, photos, expenses, voice notes. The agent organizes everything into a clean platform for the residente and the developer.
 
 ## How It Works
 
 ```
-Residente sends WhatsApp message (text, photo, voice, receipt)
-     |
-     v
-WASenderApi (WhatsApp bridge, QR code pairing)
-     |
-     v
-/api/webhooks/whatsapp -> stores message -> processes with Claude
-     |
-     v
-Claude agent creates tasks, logs expenses, organizes photos
-     |
-     v
-Sends WhatsApp confirmation back to residente
-     |
-     v
-Two dashboards:
-  /project/[id]          -- Residente (mobile-first: tasks, expenses, photos)
-  /project/[id]/overview -- Developer (read-only: summary, activity, chat log)
+WhatsApp message (text, photo, voice, receipt)
+  → WASenderApi webhook
+  → Claude agent processes (creates tasks, logs expenses, organizes photos)
+  → WhatsApp confirmation back to residente
+  → Two dashboards update in real time
+
+/login                    → Magic link auth
+/dashboard                → Project list + creation
+/project/[id]             → Residente view (tasks, expenses, photos)
+/project/[id]/overview    → Developer view (summary, activity, chat, client messaging)
 ```
 
 ## Tech Stack
 
-- **Next.js 15** + TypeScript + Tailwind CSS
-- **Supabase** -- PostgreSQL + Storage + RLS
-- **WASenderApi** -- unofficial WhatsApp bridge ($6/mo, QR code pairing)
-- **Claude API** (Sonnet) -- message processing with tool use
-- **Groq Whisper** -- Spanish voice note transcription
-- **Vercel** -- deployment
+- **Next.js 16** + TypeScript + Tailwind CSS v4
+- **Supabase** — PostgreSQL + Storage + Auth (magic link)
+- **WASenderApi** — WhatsApp bridge (QR code pairing)
+- **Claude API** (Sonnet 4) — message processing with tool use
+- **Groq Whisper** — Spanish voice transcription
+- **Vercel** — deployment + cron
 
 ## Setup
 
-### 1. Install dependencies
+### 1. Install
 
 ```bash
 npm install
 ```
 
-### 2. Create a Supabase project
+### 2. Environment variables
 
-Run `supabase/schema.sql` in the Supabase SQL Editor to create the 4 tables (`projects`, `site_tasks`, `site_photos`, `site_messages`) and the `site-photos` storage bucket.
-
-### 3. Seed a project
-
-```sql
-INSERT INTO projects (name, residente_name, residente_phone)
-VALUES ('Mi Proyecto', 'Nombre del Residente', '1234567890')
-RETURNING id;
-```
-
-The `residente_phone` must match the format WASenderApi sends (digits only, with country code, no `+`).
-
-### 4. Set up WASenderApi
-
-Create a session at wasenderapi.com, scan the QR code with WhatsApp, and configure the webhook:
-
-- **Payload URL:** `https://your-domain.vercel.app/api/webhooks/whatsapp`
-- **Subscriptions:** only `messages.received`
-- **Message filtering:** ignore groups, broadcasts, channels
-
-### 5. Environment variables
-
-Copy `.env.local.example` to `.env.local` and fill in:
+Copy `.env.local.example` to `.env.local`:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ANTHROPIC_API_KEY=your-anthropic-api-key
 WASENDER_API_KEY=your-wasender-api-key
 GROQ_API_KEY=your-groq-api-key
+NEXT_PUBLIC_APP_URL=https://your-domain.vercel.app
 ```
 
-`WASENDER_SESSION_ID` and `WASENDER_WEBHOOK_SECRET` are optional. The API key serves as the Bearer token, and signature verification uses the `x-webhook-signature` header matched against `WASENDER_WEBHOOK_SECRET`.
+### 3. Database
 
-### 6. Run locally
+Run these migrations in order in the Supabase SQL Editor:
+
+1. `supabase/schema.sql` — base tables (projects, site_tasks, site_photos, site_messages, storage bucket)
+2. `supabase/migrations/002_album_and_clients.sql` — album grouping columns + clients table
+3. `supabase/migrations/003_auth_setup.sql` — auth indexes
+
+### 4. Supabase Auth
+
+- Authentication > Providers: enable Email with magic link
+- Authentication > User Signups: disable "Confirm email"
+- Authentication > URL Configuration: set Site URL to your domain, add redirect URLs for `/auth/callback`
+
+### 5. WASenderApi
+
+Create a session at wasenderapi.com, scan QR with WhatsApp:
+
+- **Webhook URL:** `https://your-domain.vercel.app/api/webhooks/whatsapp`
+- **Subscriptions:** `messages.received` only
+- **Filtering:** ignore groups, broadcasts, channels
+
+### 6. Run
 
 ```bash
 npm run dev
 ```
-
-### 7. Deploy
-
-Push to GitHub and connect to Vercel. Add the same env vars in Vercel Settings > Environment Variables. Redeploy after adding them.
 
 ## Project Structure
 
@@ -94,52 +82,76 @@ Push to GitHub and connect to Vercel. Add the same env vars in Vercel Settings >
 src/
   app/
     api/
-      webhooks/whatsapp/    -- receives WhatsApp messages from WASenderApi
-      agent/process/        -- processes messages with Claude (also used for retries)
-      tasks/                -- GET tasks with filters
-      photos/               -- GET photos with filters
-      messages/             -- GET message history
-      project/              -- GET project summary + stats
-    project/
-      [id]/
-        page.tsx            -- Residente dashboard (tasks, expenses, photos)
-        overview/
-          page.tsx          -- Developer dashboard (summary, activity, chat)
+      auth/login/           — send magic link OTP
+      auth/callback/        — exchange code for session
+      webhooks/whatsapp/    — receive + process WhatsApp messages
+      agent/chat/           — dashboard agent conversations
+      agent/process/        — manual message reprocessing
+      tasks/                — GET (list), POST (create)
+      tasks/[id]/           — PATCH (update), DELETE
+      clients/              — GET (list), POST (create)
+      messages/             — GET (history)
+      messages/draft/       — POST (agent generates client update)
+      messages/send/        — POST (send to clients via WhatsApp)
+      photos/               — GET (list)
+      project/              — GET (summary + stats)
+      projects/             — GET (user's projects), POST (create)
+      cron/retry/           — GET (reprocess stale messages)
+    login/                  — login page
+    dashboard/              — project list + creation
+    project/[id]/           — residente dashboard
+    project/[id]/overview/  — developer dashboard
   components/
-    TaskCard.tsx            -- Task card with photo, category, priority
-    TaskDetail.tsx          -- Full task overlay with expense breakdown
-    TaskList.tsx            -- Filterable task list grouped by status
-    ExpenseTab.tsx          -- Expense summary + list
-    PhotoGrid.tsx           -- Photo grid with lightbox
-    SummaryCards.tsx        -- Developer summary cards
-    ActivityFeed.tsx        -- Chronological activity feed
-    ChatLog.tsx             -- Read-only WhatsApp conversation view
+    LoginForm.tsx           — magic link email form
+    ProjectSetup.tsx        — new project form
+    TaskCard.tsx            — task card with completion toggle
+    TaskDetail.tsx          — editable task detail with agent chat
+    TaskList.tsx            — filterable list grouped by status
+    TaskCreationForm.tsx    — FAB + creation form
+    AgentChat.tsx           — chat with Claude from dashboard
+    ExpenseTab.tsx          — expense summary + list
+    PhotoGrid.tsx           — photo grid with lightbox
+    SummaryCards.tsx        — developer summary stats
+    ActivityFeed.tsx        — timeline activity feed
+    ChatLog.tsx             — WhatsApp conversation view
+    ClientList.tsx          — client selection list
+    ClientForm.tsx          — add client form
+    ClientUpdatesTab.tsx    — client messaging workflow
+    DraftReviewModal.tsx    — review + send client message
   lib/
-    agent.ts                -- Claude agent: system prompt, tools, processing loop
-    wasender.ts             -- WASenderApi client: send messages, download media, parse webhooks
-    media.ts                -- Media processing: upload to Supabase, voice transcription via Groq
-    supabase.ts             -- Supabase client + TypeScript types
-    format.ts               -- Spanish formatting utilities (currency, dates, categories)
+    agent.ts                — Claude agent (tools, processing, conversation memory, client drafts)
+    wasender.ts             — WASenderApi client (send, decrypt, parse, retry on 429)
+    media.ts                — media processing (upload to Supabase, voice transcription)
+    supabase.ts             — Supabase client + TypeScript types
+    auth.ts                 — browser auth client + role helper
+    format.ts               — Spanish formatting (currency, dates, categories)
+    phone.ts                — phone number normalization
+    task-summary.ts         — task aggregation helper
+  middleware.ts             — auth protection for all routes
 ```
 
 ## Tests
 
 ```bash
-npm test
+npm test            # run once
+npm run test:watch  # watch mode
 ```
 
-146 tests across 18 files covering all lib functions, API routes, and components. Uses Vitest + @testing-library/react.
+244 tests across 34 files. Vitest + @testing-library/react.
 
-## Architecture Docs
+## Documentation
 
-- `../architecture.md` -- full product vision (v1+)
-- `../architecture-v0.md` -- pilot architecture, build plan, data model, agent tools
+- [`DESIGN.md`](DESIGN.md) — design system: palette, typography, components, philosophy
+- [`TESTING.md`](TESTING.md) — manual testing checklist (70+ items)
+- [`../architecture.md`](../architecture.md) — full product architecture
 
-## Key Technical Decisions
+## Key Decisions
 
-- **Expenses are tasks** with `category='expense'` and extra fields (`expense_amount`, `expense_items` JSONB, `receipt_url`). Avoids a separate table for v0.
-- **`site_messages.processed` boolean** acts as a job queue. No separate queue system needed.
-- **Messages processed inline** in the webhook handler (not fire-and-forget). Vercel kills serverless functions after response is sent, so async fetch to a separate endpoint doesn't work.
-- **WASenderApi uses LID format** for `remoteJid` but provides `cleanedSenderPn` with the real phone number. The parser falls back through `cleanedSenderPn` > `senderPn` > `remoteJid`.
-- **No auth for v0.** Dashboard URLs use the project UUID as a pseudo-secret. Good enough for a pilot.
-- **15-second polling** on both dashboards for near-real-time data updates.
+- **Magic link auth** — email OTP via Supabase, no passwords
+- **Expenses are tasks** with `category='expense'` + extra fields. No separate table.
+- **Messages processed inline** in the webhook handler. Vercel kills fire-and-forget.
+- **Conversation memory** — last 10 messages loaded into Claude context for continuity.
+- **Album grouping** — multi-photo WhatsApp messages grouped into one task.
+- **Phone normalization** — stored as digits only, matching WASenderApi format.
+- **Client messaging** — agent drafts, developer approves. Never autonomous.
+- **Daily retry cron** — reprocesses stale unprocessed messages (Vercel Hobby tier).
