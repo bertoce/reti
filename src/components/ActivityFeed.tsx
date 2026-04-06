@@ -16,72 +16,73 @@ type Props = {
 export default function ActivityFeed({ tasks }: Props) {
   if (tasks.length === 0) {
     return (
-      <p className="text-center text-sm text-muted py-8" data-testid="empty-feed">
-        Sin actividad reciente
-      </p>
+      <div className="text-center py-16 px-6" data-testid="empty-feed">
+        <p className="text-sm text-muted">Sin actividad reciente</p>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-1" data-testid="activity-feed">
-      {tasks.map((task) => (
-        <ActivityItem key={task.id} task={task} />
-      ))}
+    <div className="px-6 py-4" data-testid="activity-feed">
+      <p className="section-label mb-4">Registro de actividad</p>
+      <div className="space-y-0">
+        {tasks.map((task, i) => (
+          <ActivityItem key={task.id} task={task} isLast={i === tasks.length - 1} />
+        ))}
+      </div>
     </div>
   );
 }
 
-function ActivityItem({ task }: { task: SiteTask }) {
+function ActivityItem({ task, isLast }: { task: SiteTask; isLast: boolean }) {
   const priorityIcon = getPriorityIndicator(task.priority);
   const isExpense = task.category === "expense" && task.expense_amount;
   const hasPhoto = task.photos && task.photos.length > 0;
 
   return (
     <div
-      className="flex gap-3 px-4 py-3 border-b border-border last:border-b-0"
+      className={`flex gap-4 py-4 ${!isLast ? "border-b border-border" : ""}`}
       data-testid="activity-item"
     >
-      {/* Icon */}
-      <div className="shrink-0 mt-0.5">
-        <span className="text-base">{getActivityIcon(task.category)}</span>
+      {/* Timeline dot */}
+      <div className="shrink-0 flex flex-col items-center pt-1.5">
+        <div className={`w-2 h-2 rounded-full ${getCategoryDot(task.category)}`} />
       </div>
 
       <div className="flex-1 min-w-0">
         {/* Title */}
-        <p className="text-sm text-foreground">
-          {priorityIcon && <span className="mr-1">{priorityIcon}</span>}
+        <p className="text-sm font-medium text-foreground tracking-tight">
+          {priorityIcon && <span className="mr-1.5">{priorityIcon}</span>}
           {task.title}
         </p>
 
         {/* Meta */}
-        <div className="flex items-center gap-2 mt-1">
-          <span
-            className={`inline-block px-1.5 py-0.5 text-xs rounded ${getCategoryColor(task.category)}`}
-          >
+        <div className="flex items-center gap-2 mt-1.5">
+          <span className={`chip ${getCategoryColor(task.category)}`}>
             {getCategoryLabel(task.category)}
           </span>
 
           {isExpense && (
-            <span className="text-xs font-semibold text-foreground" data-testid="feed-expense-amount">
+            <span className="text-xs font-semibold text-foreground tabular-nums" data-testid="feed-expense-amount">
               {formatCurrency(task.expense_amount!)}
             </span>
           )}
 
-          <span className="text-xs text-muted ml-auto shrink-0">
+          <span className="text-xs text-muted/50 ml-auto shrink-0">
             {formatRelativeTime(task.created_at)}
           </span>
         </div>
 
-        {/* Photo preview */}
+        {/* Photos */}
         {hasPhoto && (
-          <div className="flex gap-1.5 mt-2" data-testid="feed-photos">
+          <div className="flex gap-2 mt-3" data-testid="feed-photos">
             {task.photos!.slice(0, 3).map((url, i) => (
-              <div key={i} className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
-                <img src={url} alt="" className="w-full h-full object-cover" />
+              <div key={i} className="w-16 h-16 rounded overflow-hidden bg-subtle">
+                <img src={url} alt="" className="w-full h-full object-cover photo-warm" />
               </div>
             ))}
             {task.photos!.length > 3 && (
-              <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center">
+              <div className="w-16 h-16 rounded bg-subtle flex items-center justify-center">
                 <span className="text-xs text-muted">+{task.photos!.length - 3}</span>
               </div>
             )}
@@ -92,14 +93,14 @@ function ActivityItem({ task }: { task: SiteTask }) {
   );
 }
 
-function getActivityIcon(category: string): string {
-  const icons: Record<string, string> = {
-    progress: "🔨",
-    issue: "⚠️",
-    material: "📦",
-    inspection: "🔍",
-    expense: "💰",
-    general: "📋",
+function getCategoryDot(category: string): string {
+  const dots: Record<string, string> = {
+    progress: "bg-accent",
+    issue: "bg-danger",
+    material: "bg-warning",
+    inspection: "bg-accent",
+    expense: "bg-success",
+    general: "bg-muted",
   };
-  return icons[category] || "📋";
+  return dots[category] || "bg-muted";
 }

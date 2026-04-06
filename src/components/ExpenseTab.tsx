@@ -1,7 +1,7 @@
 "use client";
 
 import { type SiteTask } from "@/lib/supabase";
-import { formatCurrency, formatRelativeTime, getCategoryColor } from "@/lib/format";
+import { formatCurrency, formatRelativeTime } from "@/lib/format";
 
 type Props = {
   tasks: SiteTask[];
@@ -27,80 +27,78 @@ export default function ExpenseTab({ tasks, onSelectTask }: Props) {
 
   return (
     <div data-testid="expense-tab">
-      {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3 px-4 py-3" data-testid="expense-summary">
-        <SummaryCard label="Esta semana" amount={totalWeek} />
-        <SummaryCard label="Este mes" amount={totalMonth} />
-        <SummaryCard label="Total" amount={totalAll} highlight />
+      {/* Summary */}
+      <div className="px-6 py-6" data-testid="expense-summary">
+        <p className="section-label mb-4">Resumen de gastos</p>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="card" data-testid="summary-card">
+            <p className="text-xs text-muted">Esta semana</p>
+            <p className="text-sm font-bold text-foreground mt-1 tabular-nums">
+              {formatCurrency(totalWeek)}
+            </p>
+          </div>
+          <div className="card" data-testid="summary-card">
+            <p className="text-xs text-muted">Este mes</p>
+            <p className="text-sm font-bold text-foreground mt-1 tabular-nums">
+              {formatCurrency(totalMonth)}
+            </p>
+          </div>
+          <div className="bg-foreground text-background rounded p-6" data-testid="summary-card">
+            <p className="text-xs text-background/50">Total</p>
+            <p className="text-sm font-bold mt-1 tabular-nums">
+              {formatCurrency(totalAll)}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Expense list */}
-      <div className="px-4 pb-4 space-y-2">
+      {/* List */}
+      <div className="px-6 pb-6">
+        <p className="section-label mb-4">Detalle</p>
         {expenses.length === 0 ? (
-          <p className="text-center text-sm text-muted py-8" data-testid="empty-expenses">
-            No hay gastos registrados
-          </p>
+          <div className="text-center py-12" data-testid="empty-expenses">
+            <p className="text-sm text-muted">No hay gastos registrados</p>
+          </div>
         ) : (
-          expenses.map((task) => (
-            <button
-              key={task.id}
-              onClick={() => onSelectTask(task)}
-              className="w-full text-left bg-card rounded-lg border border-border p-4 active:bg-gray-50 transition-colors"
-              data-testid="expense-card"
-            >
-              <div className="flex items-center justify-between">
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-medium text-foreground truncate">
-                    {task.title}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    {task.expense_vendor && (
-                      <span className="text-xs text-muted">{task.expense_vendor}</span>
-                    )}
-                    <span className="text-xs text-muted">
-                      {formatRelativeTime(task.created_at)}
+          <div className="space-y-3">
+            {expenses.map((task) => (
+              <button
+                key={task.id}
+                onClick={() => onSelectTask(task)}
+                className="w-full text-left card-interactive"
+                data-testid="expense-card"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-medium text-foreground tracking-tight truncate">
+                      {task.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      {task.expense_vendor && (
+                        <span className="text-xs text-muted">{task.expense_vendor}</span>
+                      )}
+                      {task.expense_vendor && (
+                        <span className="text-xs text-muted/30">·</span>
+                      )}
+                      <span className="text-xs text-muted/50">
+                        {formatRelativeTime(task.created_at)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0 ml-4">
+                    <span className="text-base font-bold text-foreground tabular-nums" data-testid="expense-card-amount">
+                      {formatCurrency(task.expense_amount!)}
                     </span>
+                    {task.receipt_url && (
+                      <p className="text-xs text-accent mt-0.5">con recibo</p>
+                    )}
                   </div>
                 </div>
-                <div className="text-right shrink-0 ml-3">
-                  <span className="text-base font-bold text-foreground" data-testid="expense-card-amount">
-                    {formatCurrency(task.expense_amount!)}
-                  </span>
-                  {task.receipt_url && (
-                    <p className="text-xs text-muted mt-0.5">con recibo</p>
-                  )}
-                </div>
-              </div>
-            </button>
-          ))
+              </button>
+            ))}
+          </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function SummaryCard({
-  label,
-  amount,
-  highlight = false,
-}: {
-  label: string;
-  amount: number;
-  highlight?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-lg p-3 text-center ${
-        highlight ? "bg-foreground text-background" : "bg-card border border-border"
-      }`}
-      data-testid="summary-card"
-    >
-      <p className={`text-xs ${highlight ? "text-background/60" : "text-muted"}`}>
-        {label}
-      </p>
-      <p className={`text-sm font-bold mt-0.5 ${highlight ? "" : "text-foreground"}`}>
-        {formatCurrency(amount)}
-      </p>
     </div>
   );
 }

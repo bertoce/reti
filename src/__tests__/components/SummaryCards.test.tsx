@@ -16,7 +16,7 @@ const baseSummary = {
 describe("SummaryCards", () => {
   it("renders all summary stat cards", () => {
     render(<SummaryCards summary={baseSummary} />);
-    expect(screen.getAllByTestId("summary-stat-card").length).toBeGreaterThanOrEqual(5);
+    expect(screen.getAllByTestId("summary-stat-card").length).toBeGreaterThanOrEqual(3);
   });
 
   it("shows pending task count", () => {
@@ -28,7 +28,7 @@ describe("SummaryCards", () => {
   it("shows completed today count", () => {
     render(<SummaryCards summary={baseSummary} />);
     expect(screen.getByText("3")).toBeInTheDocument();
-    expect(screen.getByText("Hoy")).toBeInTheDocument();
+    expect(screen.getByText("Completadas hoy")).toBeInTheDocument();
   });
 
   it("shows open issues count", () => {
@@ -39,8 +39,8 @@ describe("SummaryCards", () => {
 
   it("shows expense totals formatted as currency", () => {
     render(<SummaryCards summary={baseSummary} />);
-    expect(screen.getByText("Gastos esta semana")).toBeInTheDocument();
-    expect(screen.getByText("Gastos total")).toBeInTheDocument();
+    expect(screen.getByText("Esta semana")).toBeInTheDocument();
+    expect(screen.getByText("Total acumulado")).toBeInTheDocument();
   });
 
   it("shows last activity time", () => {

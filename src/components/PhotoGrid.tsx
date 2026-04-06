@@ -13,26 +13,32 @@ export default function PhotoGrid({ photos }: Props) {
 
   if (photos.length === 0) {
     return (
-      <p className="text-center text-sm text-muted py-8 px-4" data-testid="empty-photos">
-        No hay fotos
-      </p>
+      <div className="text-center py-16 px-6" data-testid="empty-photos">
+        <p className="text-sm text-muted">No hay fotos</p>
+      </div>
     );
   }
 
   return (
     <div data-testid="photo-grid">
-      <div className="grid grid-cols-3 gap-1 px-1 pb-4">
+      <div className="px-6 py-4">
+        <p className="section-label mb-4">
+          {photos.length} foto{photos.length !== 1 ? "s" : ""}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-0.5 px-0.5 pb-6">
         {photos.map((photo) => (
           <button
             key={photo.id}
             onClick={() => setSelectedPhoto(photo)}
-            className="aspect-square overflow-hidden bg-gray-100"
+            className="aspect-square overflow-hidden bg-subtle transition-opacity hover:opacity-90"
             data-testid="photo-thumbnail"
           >
             <img
               src={photo.thumbnail_url || photo.file_url}
               alt={photo.caption || ""}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover photo-warm"
               loading="lazy"
             />
           </button>
@@ -42,23 +48,35 @@ export default function PhotoGrid({ photos }: Props) {
       {/* Lightbox */}
       {selectedPhoto && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 flex flex-col"
+          className="fixed inset-0 z-50 bg-foreground/95 flex flex-col"
           onClick={() => setSelectedPhoto(null)}
           data-testid="photo-lightbox"
         >
-          <div className="flex-1 flex items-center justify-center p-4">
+          {/* Close */}
+          <div className="flex justify-end p-4">
+            <button className="text-white/50 hover:text-white transition-colors">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Image */}
+          <div className="flex-1 flex items-center justify-center px-6 pb-4">
             <img
               src={selectedPhoto.file_url}
               alt={selectedPhoto.caption || ""}
-              className="max-w-full max-h-full object-contain rounded-lg"
+              className="max-w-full max-h-full object-contain rounded"
             />
           </div>
+
+          {/* Caption */}
           {(selectedPhoto.caption || selectedPhoto.created_at) && (
-            <div className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 pb-8 text-center" onClick={(e) => e.stopPropagation()}>
               {selectedPhoto.caption && (
-                <p className="text-white text-sm mb-1">{selectedPhoto.caption}</p>
+                <p className="text-white text-sm mb-1 leading-relaxed">{selectedPhoto.caption}</p>
               )}
-              <p className="text-white/50 text-xs">
+              <p className="text-white/40 text-xs">
                 {formatDate(selectedPhoto.created_at)} — {formatTime(selectedPhoto.created_at)}
               </p>
             </div>

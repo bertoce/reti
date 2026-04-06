@@ -19,43 +19,51 @@ type Props = {
 
 export default function SummaryCards({ summary }: Props) {
   return (
-    <div className="space-y-3" data-testid="summary-cards">
-      {/* Top row: key numbers */}
-      <div className="grid grid-cols-3 gap-3">
-        <Card
-          label="Pendientes"
-          value={summary.tasks_pending.toString()}
-          accent={summary.tasks_pending > 0 ? "warning" : "default"}
-        />
-        <Card
-          label="Hoy"
-          value={summary.tasks_completed_today.toString()}
-          sublabel="completadas"
-          accent="success"
-        />
-        <Card
-          label="Problemas"
-          value={summary.issues_open.toString()}
-          accent={summary.issues_open > 0 ? "danger" : "default"}
-        />
+    <div className="space-y-6" data-testid="summary-cards">
+      {/* Key numbers */}
+      <div>
+        <p className="section-label mb-4">Estado del proyecto</p>
+        <div className="grid grid-cols-3 gap-4">
+          <StatCard
+            value={summary.tasks_pending.toString()}
+            label="Pendientes"
+            accent={summary.tasks_pending > 0 ? "warning" : "default"}
+          />
+          <StatCard
+            value={summary.tasks_completed_today.toString()}
+            label="Completadas hoy"
+            accent="success"
+          />
+          <StatCard
+            value={summary.issues_open.toString()}
+            label="Problemas"
+            accent={summary.issues_open > 0 ? "danger" : "default"}
+          />
+        </div>
       </div>
 
-      {/* Expense row */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card
-          label="Gastos esta semana"
-          value={formatCurrency(summary.expenses_this_week)}
-        />
-        <Card
-          label="Gastos total"
-          value={formatCurrency(summary.expenses_total)}
-          accent="highlight"
-        />
+      {/* Expenses */}
+      <div>
+        <p className="section-label mb-4">Gastos</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="card">
+            <p className="text-xs text-muted">Esta semana</p>
+            <p className="text-lg font-bold text-foreground mt-1 tabular-nums">
+              {formatCurrency(summary.expenses_this_week)}
+            </p>
+          </div>
+          <div className="bg-foreground text-background rounded p-6">
+            <p className="text-xs text-background/50">Total acumulado</p>
+            <p className="text-lg font-bold mt-1 tabular-nums">
+              {formatCurrency(summary.expenses_total)}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Activity indicator */}
-      <div className="bg-card border border-border rounded-lg px-4 py-3 flex items-center justify-between" data-testid="last-activity">
-        <span className="text-xs text-muted">Última actividad</span>
+      {/* Last activity */}
+      <div className="flex items-center justify-between py-4 border-t border-border" data-testid="last-activity">
+        <span className="section-label">Última actividad</span>
         <span className="text-sm font-medium text-foreground">
           {summary.last_activity
             ? formatRelativeTime(summary.last_activity)
@@ -66,53 +74,44 @@ export default function SummaryCards({ summary }: Props) {
   );
 }
 
-function Card({
-  label,
+function StatCard({
   value,
-  sublabel,
+  label,
   accent = "default",
 }: {
-  label: string;
   value: string;
-  sublabel?: string;
-  accent?: "default" | "success" | "warning" | "danger" | "highlight";
+  label: string;
+  accent?: "default" | "success" | "warning" | "danger";
 }) {
-  const accentClasses = {
-    default: "bg-card border border-border",
-    success: "bg-success-light border border-success/20",
-    warning: "bg-warning-light border border-warning/20",
-    danger: "bg-danger-light border border-danger/20",
-    highlight: "bg-foreground text-background",
+  const styles = {
+    default: {
+      bg: "card",
+      value: "text-foreground",
+      label: "text-muted",
+    },
+    success: {
+      bg: "card bg-success-light border-0",
+      value: "text-success",
+      label: "text-success/70",
+    },
+    warning: {
+      bg: "card bg-warning-light border-0",
+      value: "text-warning",
+      label: "text-warning/70",
+    },
+    danger: {
+      bg: "card bg-danger-light border-0",
+      value: "text-danger",
+      label: "text-danger/70",
+    },
   };
 
-  const valueClasses = {
-    default: "text-foreground",
-    success: "text-success",
-    warning: "text-warning",
-    danger: "text-danger",
-    highlight: "text-background",
-  };
-
-  const labelClasses = {
-    default: "text-muted",
-    success: "text-success/70",
-    warning: "text-warning/70",
-    danger: "text-danger/70",
-    highlight: "text-background/60",
-  };
+  const s = styles[accent];
 
   return (
-    <div
-      className={`rounded-lg px-3 py-3 ${accentClasses[accent]}`}
-      data-testid="summary-stat-card"
-    >
-      <p className={`text-xs ${labelClasses[accent]}`}>{label}</p>
-      <p className={`text-lg font-bold mt-0.5 ${valueClasses[accent]}`}>
-        {value}
-      </p>
-      {sublabel && (
-        <p className={`text-xs ${labelClasses[accent]}`}>{sublabel}</p>
-      )}
+    <div className={s.bg} data-testid="summary-stat-card">
+      <p className={`text-2xl font-bold tabular-nums ${s.value}`}>{value}</p>
+      <p className={`text-xs mt-1 ${s.label}`}>{label}</p>
     </div>
   );
 }
