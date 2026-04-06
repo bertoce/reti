@@ -1,27 +1,28 @@
 @import "tailwindcss";
 
-/* ─── lowkey design system for reti ─────────────────────
-   "The home is the hero, not the interface."
-   Quiet confidence. Typography does the heavy lifting.
-   Generous space. Motion with purpose.
+/* ─── reti design system ────────────────────────────────
+   Ando's field notebook. Warm concrete meets graph paper.
+   The grid is the canvas. Content sits on the page,
+   not in boxes. Contemplative, not clinical.
    ─────────────────────────────────────────────────────── */
 
 :root {
-  --background: #FAFAF8;
-  --foreground: #1A1A1A;
+  --background: #F7F6F3;
+  --foreground: #2C2C28;
   --accent: #4A7A90;
   --accent-light: #E8F0F4;
   --success: #4A7C59;
-  --success-light: #E8F0EA;
+  --success-light: #ECF2EE;
   --warning: #C4841D;
-  --warning-light: #FDF4E8;
-  --danger: #C92A2A;
-  --danger-light: #FDE8E8;
-  --muted: #6B6B6B;
-  --border: #E8E8E6;
-  --card: #ffffff;
+  --warning-light: #F8F0E4;
+  --danger: #B5332E;
+  --danger-light: #F5E8E7;
+  --muted: #8A8A82;
+  --border: #E0DED8;
+  --card: #FFFFFE;
   --martin-blue: #4A7A90;
-  --subtle: #F0F0EE;
+  --subtle: #EEECEA;
+  --paper: #F2F1ED;
 }
 
 @theme inline {
@@ -40,6 +41,7 @@
   --color-card: var(--card);
   --color-martin-blue: var(--martin-blue);
   --color-subtle: var(--subtle);
+  --color-paper: var(--paper);
   --font-sans: var(--font-inter), "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -49,39 +51,40 @@ body {
   font-family: var(--font-sans);
 }
 
-/* ─── Agnes Martin "Stars" grid ─────────────────────────
-   Fine pencil grid with dots at intersections. 32px cells.
+/* ─── The grid — the notebook canvas ───────────────────
+   Agnes Martin "Stars" (1963). Always present, always felt.
+   This IS the product surface, not decoration.
    ─────────────────────────────────────────────────────── */
 .bg-stars {
   background-image:
-    radial-gradient(circle, rgba(74, 122, 144, 0.35) 1px, transparent 1px),
-    linear-gradient(rgba(74, 122, 144, 0.09) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(74, 122, 144, 0.09) 1px, transparent 1px);
+    radial-gradient(circle, rgba(74, 122, 144, 0.28) 1px, transparent 1px),
+    linear-gradient(rgba(74, 122, 144, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74, 122, 144, 0.07) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
 .bg-stars-faint {
   background-image:
-    radial-gradient(circle, rgba(74, 122, 144, 0.11) 1px, transparent 1px),
-    linear-gradient(rgba(74, 122, 144, 0.03) 2px, transparent 2px),
-    linear-gradient(90deg, rgba(74, 122, 144, 0.03) 2px, transparent 2px);
+    radial-gradient(circle, rgba(74, 122, 144, 0.08) 1px, transparent 1px),
+    linear-gradient(rgba(74, 122, 144, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74, 122, 144, 0.025) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
 /* ─── Typography ───────────────────────────────────────── */
 .section-label {
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   line-height: 1.4;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--accent);
 }
 
 .text-display {
   font-size: 2.75rem;
   line-height: 1.05;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   font-weight: 600;
 }
 
@@ -89,13 +92,14 @@ body {
   font-size: 2rem;
   line-height: 1.15;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .text-heading {
   font-size: 1.5rem;
   line-height: 1.25;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 /* ─── Buttons ──────────────────────────────────────────── */
@@ -106,19 +110,21 @@ body {
   background-color: var(--martin-blue);
   color: white;
   padding: 0.75rem 1.5rem;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
-  border-radius: 4px;
-  transition: all 200ms;
+  letter-spacing: 0.01em;
+  border-radius: 3px;
+  transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-primary:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
   transform: translateY(-1px);
 }
 
 .btn-primary:active {
   transform: translateY(0);
+  transition-duration: 100ms;
 }
 
 .btn-secondary {
@@ -128,19 +134,22 @@ body {
   border: 1px solid var(--border);
   color: var(--foreground);
   padding: 0.75rem 1.5rem;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
-  border-radius: 4px;
-  transition: all 200ms;
+  letter-spacing: 0.01em;
+  border-radius: 3px;
+  transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-secondary:hover {
-  border-color: var(--foreground);
+  border-color: var(--accent);
+  color: var(--accent);
   transform: translateY(-1px);
 }
 
 .btn-secondary:active {
   transform: translateY(0);
+  transition-duration: 100ms;
 }
 
 .btn-ghost {
@@ -149,17 +158,17 @@ body {
   justify-content: center;
   color: var(--muted);
   padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
-  border-radius: 4px;
-  transition: color 200ms;
+  border-radius: 3px;
+  transition: color 300ms;
 }
 
 .btn-ghost:hover {
   color: var(--foreground);
 }
 
-/* ─── Form inputs ──────────────────────────────────────── */
+/* ─── Form inputs — editorial, understated ─────────────── */
 .input-editorial {
   width: 100%;
   border: none;
@@ -168,87 +177,87 @@ body {
   padding: 0.875rem 0;
   font-size: 0.9375rem;
   color: var(--foreground);
-  transition: border-color 200ms;
+  transition: border-color 300ms;
 }
 
 .input-editorial::placeholder {
   color: var(--muted);
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .input-editorial:focus {
   outline: none;
-  border-bottom-color: var(--martin-blue);
+  border-bottom-color: var(--accent);
 }
 
-/* ─── Cards ────────────────────────────────────────────── */
+/* ─── Cards — light containers, not boxes ──────────────── */
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 3px;
   padding: 1.5rem;
-  transition: border-color 200ms;
 }
 
 .card-interactive {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 3px;
   padding: 1.5rem;
-  transition: all 200ms;
+  transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card-interactive:hover {
-  border-color: var(--martin-blue);
+  border-color: var(--accent);
   transform: translateY(-1px);
 }
 
 .card-interactive:active {
   transform: translateY(0);
+  transition-duration: 100ms;
 }
 
-/* ─── Chips / badges ───────────────────────────────────── */
+/* ─── Chips — small, precise labels ────────────────────── */
 .chip {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.625rem;
-  font-size: 0.6875rem;
+  padding: 0.1875rem 0.5rem;
+  font-size: 0.625rem;
   font-weight: 500;
-  border-radius: 3px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  border-radius: 2px;
 }
 
 .chip-select {
   display: inline-flex;
   align-items: center;
   padding: 0.375rem 0.75rem;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 500;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: 2px;
   color: var(--muted);
-  transition: all 200ms;
+  transition: all 300ms;
   cursor: pointer;
 }
 
 .chip-select:hover {
-  border-color: var(--martin-blue);
-  color: var(--foreground);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .chip-select-active {
   display: inline-flex;
   align-items: center;
   padding: 0.375rem 0.75rem;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 500;
-  background: var(--martin-blue);
+  background: var(--accent);
   color: white;
-  border: 1px solid var(--martin-blue);
-  border-radius: 3px;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
 }
 
-/* ─── Animated underline link ──────────────────────────── */
+/* ─── Animated underline ───────────────────────────────── */
 .link-reveal {
   position: relative;
 }
@@ -260,15 +269,15 @@ body {
   left: 0;
   width: 0;
   height: 1px;
-  background: var(--foreground);
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--accent);
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .link-reveal:hover::after {
   width: 100%;
 }
 
-/* ─── Photo warm filter ────────────────────────────────── */
+/* ─── Photo treatment — warm, not digital ──────────────── */
 .photo-warm {
-  filter: saturate(0.95) brightness(1.02) sepia(0.03);
+  filter: saturate(0.92) brightness(1.01) sepia(0.04);
 }

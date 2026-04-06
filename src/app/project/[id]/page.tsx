@@ -147,9 +147,9 @@ export default function ProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background" data-testid="project-page">
+    <div className="min-h-screen bg-background bg-stars-faint" data-testid="project-page">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-card border-b border-border">
+      <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-sm border-b border-border">
         <div className="px-6 py-4">
           <p className="section-label mb-1">Residente</p>
           <h1 className="text-base font-semibold text-foreground tracking-tight" data-testid="project-name">

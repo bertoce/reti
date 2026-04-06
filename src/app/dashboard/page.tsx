@@ -58,10 +58,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background" data-testid="dashboard-page">
+    <div className="min-h-screen bg-background bg-stars-faint" data-testid="dashboard-page">
       {/* Header */}
-      <header className="bg-card border-b border-border">
-        <div className="max-w-2xl mx-auto px-6 py-6 flex items-center justify-between">
+      <header className="border-b border-border">
+        <div className="max-w-2xl mx-auto px-6 py-8 flex items-center justify-between">
           <div>
             <h1 className="text-heading text-foreground tracking-tight">reti</h1>
             <p className="text-xs text-muted mt-1">{userEmail}</p>

@@ -52,8 +52,8 @@ export default function SummaryCards({ summary }: Props) {
               {formatCurrency(summary.expenses_this_week)}
             </p>
           </div>
-          <div className="bg-foreground text-background rounded p-6">
-            <p className="text-xs text-background/50">Total acumulado</p>
+          <div className="bg-foreground text-background rounded-sm p-6">
+            <p className="text-xs text-background/40">Total acumulado</p>
             <p className="text-lg font-bold mt-1 tabular-nums">
               {formatCurrency(summary.expenses_total)}
             </p>
